@@ -1,0 +1,195 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+h1, h2 {
+    color: #333;
+    text-align: center;
+}
+
+form {
+    background: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    width: 31%;
+    margin-left: auto; 
+    margin-right: auto;
+}
+
+label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+input[type="text"],
+input[type="number"],
+input[name="abn"],
+input[name="acn"],
+input[name="bsb"],
+input[name="postcode"],
+input[type="email"] {
+    width: 95%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, 0.05); 
+}
+
+button {
+    width: 10;
+    background-color: #28a745;
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #218838;
+}
+
+.invoice-summary {
+    margin-top: 20px;
+    padding: 10px;
+    background: #e9ecef;
+    border-radius: 5px;
+}
+
+.pdf-button {
+    margin-top: 20px;
+    background-color: #007bff;
+}
+
+.pdf-button:hover {
+    background-color: #0056b3;
+}
+
+.dropdown {
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    box-sizing: border-box;
+    background-color: rgba(0, 0, 0, 0.05);
+    margin-bottom: 10px; /* Add space at the bottom */
+}
+
+.form-container {
+    width: 100%;
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 1%; /* Reduce margin */
+}
+
+.form-container:last-child {
+    margin-right: 0;
+}
+
+.invoice {
+    font-family: 'Tahoma';
+    font-size: 12px;
+    color: #333333;
+    background-color: #FFFFFF;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.table {
+    height: 842px;
+    width: 595px;
+    font-size: 12px;
+}
+
+.clientDetails {
+    font-size: 12px;
+}
+
+.invoiceDates {
+    font-size: 12px;
+}
+
+.dateBox {
+    border: 1px solid #000;
+    padding: 5px;
+    width: 100%;
+}
+
+.dateLabel {
+    text-align: left;
+    padding-right: 10px;
+}
+
+.dateValue {
+    text-align: right;
+}
+
+.invoiceNumber {
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.tableHeader {
+    font-size: 12px;
+    background-color: #f2f2f2;
+}
+
+.tableCell {
+    font-size: 12px;
+}
+
+.amountInWords {
+    font-size: 12px;
+    width: 50%;
+}
+
+.footer {
+    font-size: 12px;
+    text-align: justify;
+}
+
+.footerDetails {
+    border-top: double medium #CCCCCC;
+    font-size: 12px;
+}
+
+.footerDetailsBox {
+    border: 1px solid #000;
+    padding: 5px;
+    width: 100%;
+}
+
+.footerDetailsLabel {
+    text-align: left;
+    padding-right: 10px;
+}
+
+.footerDetailsValue {
+    text-align: right;
+}
+
+.button {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+}
+
+.button:hover {
+    background-color: #0056b3;
+}
