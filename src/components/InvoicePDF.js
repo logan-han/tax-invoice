@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
-const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoiceNumber, dueDate }) => {
+const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoiceNumber, dueDate, currencyRemark = { enabled: false, currency: 'AUD' } }) => {
     const [total, setTotal] = useState(0);
     const [gst, setGst] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
@@ -123,15 +123,19 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                             <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" style={{ ...styles.tableHeader, textAlign: 'center' }}><strong>Qty</strong></td>
                                             <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" style={{ ...styles.tableHeader, textAlign: 'center' }}><strong>Unit Price</strong></td>
                                             <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" style={{ ...styles.tableHeader, textAlign: 'center' }}><strong>GST</strong></td>
-                                            <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" style={{ ...styles.tableHeader, textAlign: 'center' }}><strong>Subtotal</strong></td>
+                                            <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" style={{ ...styles.tableHeader, textAlign: 'center' }}><strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong></td>
                                         </tr>
                                         {items.map((item, index) => (
                                             <tr key={index}>
                                                 <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>{item.name}</td>
                                                 <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>{item.quantity}</td>
-                                                <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>{formatCurrency(item.price)}</td>
+                                                <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>
+                                                    {formatCurrency(item.price)}
+                                                </td>
                                                 <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>{item.gst ? '10%' : '0%'}</td>
-                                                <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>{formatCurrency(item.quantity * item.price * (item.gst ? 1.1 : 1))}</td>
+                                                <td valign="top" style={{ ...styles.tableCell, textAlign: 'center' }}>
+                                                    {formatCurrency(item.quantity * item.price * (item.gst ? 1.1 : 1))}
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -146,22 +150,30 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                                             <>
                                                                 <tr>
                                                                     <td align="right" style={styles.tableCell}>Total without GST</td>
-                                                                    <td align="right" style={styles.tableCell}>{formatCurrency(total)}</td>
+                                                                    <td align="right" style={styles.tableCell}>
+                                                                        {formatCurrency(total)}
+                                                                    </td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td align="right" style={styles.tableCell}>GST(10%)</td>
-                                                                    <td align="right" style={styles.tableCell}>{formatCurrency(gst)}</td>
+                                                                    <td align="right" style={styles.tableCell}>
+                                                                        {formatCurrency(gst)}
+                                                                    </td>
                                                                 </tr>
                                                                 <tr>
                                                                     <td align="right" style={styles.tableCell}><b>Total with GST</b></td>
-                                                                    <td align="right" style={styles.tableCell}><b>{formatCurrency(grandTotal)}</b></td>
+                                                                    <td align="right" style={styles.tableCell}>
+                                                                        <b>{formatCurrency(grandTotal)}</b>
+                                                                    </td>
                                                                 </tr>
                                                             </>
                                                         )}
                                                         {gst === 0 && (
                                                             <tr>
-                                                                <td align="right" style={styles.tableCell}><b>Total</b></td>
-                                                                <td align="right" style={styles.tableCell}><b>{formatCurrency(grandTotal)}</b></td>
+                                                                <td align="right" style={styles.tableCell}><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                                                <td align="right" style={styles.tableCell}>
+                                                                    <b>{formatCurrency(grandTotal)}</b>
+                                                                </td>
                                                             </tr>
                                                         )}
                                                     </tbody>

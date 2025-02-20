@@ -10,6 +10,7 @@ function App() {
     const [clientDetails, setClientDetails] = useState({});
     const [items, setItems] = useState([]);
     const [invoiceDetails, setInvoiceDetails] = useState({ invoiceDate: '', invoiceNumber: '', dueDate: '' });
+    const [currencyRemark, setCurrencyRemark] = useState({ enabled: false, currency: 'AUD' });
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
@@ -41,6 +42,10 @@ function App() {
         updateUrl(businessDetails, clientDetails, items, details);
     };
 
+    const handleCurrencyRemarkChange = (newCurrencyRemark) => {
+        setCurrencyRemark(newCurrencyRemark);
+    };
+
     const updateUrl = (business, client, items, invoice) => {
         const url = new URL(window.location);
         url.searchParams.set('business', JSON.stringify(business));
@@ -56,7 +61,7 @@ function App() {
             <BusinessDetailsForm onChange={handleBusinessDetailsChange} />
             <ClientDetailsForm onChange={handleClientDetailsChange} />
             <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
-            <ItemForm items={items} onChange={handleItemsChange} />
+            <ItemForm items={items} onChange={handleItemsChange} currencyRemark={currencyRemark} onCurrencyRemarkChange={handleCurrencyRemarkChange} />
             <div style={{ marginBottom: '20px' }}></div>
             <InvoicePDF
                 businessDetails={businessDetails}
@@ -67,6 +72,7 @@ function App() {
                 dueDate={invoiceDetails.dueDate}
                 bsb={businessDetails.bsb}
                 accountNumber={businessDetails.accountNumber}
+                currencyRemark={currencyRemark}
             />
         </div>
     );
