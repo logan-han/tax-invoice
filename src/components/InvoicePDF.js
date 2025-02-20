@@ -67,13 +67,6 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                     <tbody>
                         <tr>
                             <td valign="top">
-                                <table width="100%" cellSpacing="0" cellPadding="0">
-                                    <tbody>
-                                        <tr>
-                                            <td width="50%">&nbsp;</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
                                 Bill To: <br /><br />
                                 <table width="100%" cellSpacing="0" cellPadding="0">
                                     <tbody>
@@ -82,8 +75,8 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                                 <strong>{clientDetails.name}</strong><br />
                                                 {clientDetails.abn && <>ABN: {clientDetails.abn}<br /></>}
                                                 {clientDetails.acn && <>ACN: {clientDetails.acn}<br /></>}
-                                                {clientDetails.street} <br />
-                                                {clientDetails.suburb} {clientDetails.state} {clientDetails.postcode} <br />
+                                                {clientDetails.street}<br />
+                                                {clientDetails.suburb} {clientDetails.state} {clientDetails.postcode}<br />
                                                 {clientDetails.email && <>Email: {clientDetails.email}<br /></>}
                                                 {clientDetails.phone && <>Phone: {clientDetails.phone}<br /></>}
                                             </td>
@@ -149,19 +142,19 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                                         {gst > 0 && (
                                                             <>
                                                                 <tr>
-                                                                    <td align="right" style={styles.tableCell}>Total without GST</td>
+                                                                    <td align="right" style={styles.tableCell}>Subtotal</td>
                                                                     <td align="right" style={styles.tableCell}>
                                                                         {formatCurrency(total)}
                                                                     </td>
                                                                 </tr>
                                                                 <tr>
-                                                                    <td align="right" style={styles.tableCell}>GST(10%)</td>
+                                                                    <td align="right" style={styles.tableCell}>TOTAL GST(10%)</td>
                                                                     <td align="right" style={styles.tableCell}>
                                                                         {formatCurrency(gst)}
                                                                     </td>
                                                                 </tr>
                                                                 <tr>
-                                                                    <td align="right" style={styles.tableCell}><b>Total with GST</b></td>
+                                                                    <td align="right" style={styles.tableCell}><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
                                                                     <td align="right" style={styles.tableCell}>
                                                                         <b>{formatCurrency(grandTotal)}</b>
                                                                     </td>
