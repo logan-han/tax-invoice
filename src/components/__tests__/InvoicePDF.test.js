@@ -2,6 +2,8 @@ import React from 'react';
 import { render } from '@testing-library/react';
 import InvoicePDF from '../InvoicePDF';
 
+jest.mock('../../styles.css', () => ({}));
+
 jest.mock('jspdf', () => {
   return jest.fn().mockImplementation(() => ({
     save: jest.fn(),
@@ -12,7 +14,7 @@ jest.mock('html2canvas', () => {
   return jest.fn().mockImplementation(() => Promise.resolve());
 });
 
-jest.mock('../../styles.css', () => ({})); // Mock the CSS file
+jest.mock('../../styles.css', () => ({}));
 
 test('renders InvoicePDF component', () => {
   const businessDetails = { name: 'Business Name' };

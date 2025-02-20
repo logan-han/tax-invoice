@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import InvoiceForm from '../ItemForm';
 
-jest.mock('../../styles.css', () => ({})); // Mock the CSS file
+jest.mock('../../styles.css', () => ({}));
 
 test('renders InvoiceForm component and adds an item', () => {
   const items = [];

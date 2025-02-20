@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../styles.css';
-import { formatABN, formatACN, formatBSB } from '../utils/formatters'; // Import the common functions
-import { AUSTRALIAN_STATES } from '../utils/constants'; // Import the common constants
+import { formatABN, formatACN, formatBSB } from '../utils/formatters';
+import { AUSTRALIAN_STATES } from '../utils/constants';
 
 const BusinessDetailsForm = ({ onChange }) => {
     const [businessDetails, setBusinessDetails] = useState({
@@ -42,13 +42,13 @@ const BusinessDetailsForm = ({ onChange }) => {
         const { name, value } = e.target;
         let formattedValue = value;
         if (name === 'abn') {
-            formattedValue = formatABN(value).slice(0, 14); // ABN max length with spaces
+            formattedValue = formatABN(value).slice(0, 14);
         } else if (name === 'acn') {
-            formattedValue = formatACN(value).slice(0, 11); // ACN max length with spaces
+            formattedValue = formatACN(value).slice(0, 11);
         } else if (name === 'bsb') {
-            formattedValue = formatBSB(value).slice(0, 7); // BSB max length with dash
+            formattedValue = formatBSB(value).slice(0, 7);
         } else if (name === 'postcode') {
-            formattedValue = value.replace(/\D/g, '').slice(0, 4); // Postcode max length
+            formattedValue = value.replace(/\D/g, '').slice(0, 4);
         }
         setBusinessDetails((prevDetails) => ({
             ...prevDetails,

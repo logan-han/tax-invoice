@@ -2,7 +2,7 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import ClientDetailsForm from '../ClientDetailsForm';
 
-jest.mock('../../styles.css', () => ({})); // Mock the CSS file
+jest.mock('../../styles.css', () => ({}));
 
 test('renders ClientDetailsForm component and updates details', () => {
   const handleChange = jest.fn();

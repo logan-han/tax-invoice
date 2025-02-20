@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import '../styles.css'; // Import the CSS file for dropdown styling
-import { formatABN, formatACN } from '../utils/formatters'; // Import the common functions
-import { AUSTRALIAN_STATES } from '../utils/constants'; // Import the common constants
+import '../styles.css';
+import { formatABN, formatACN } from '../utils/formatters';
+import { AUSTRALIAN_STATES } from '../utils/constants';
 
 const ClientDetailsForm = ({ onChange }) => {
     const [clientDetails, setClientDetails] = useState({
@@ -32,11 +32,11 @@ const ClientDetailsForm = ({ onChange }) => {
         const { name, value } = e.target;
         let formattedValue = value;
         if (name === 'abn') {
-            formattedValue = formatABN(value).slice(0, 14); // ABN max length with spaces
+            formattedValue = formatABN(value).slice(0, 14);
         } else if (name === 'acn') {
-            formattedValue = formatACN(value).slice(0, 11); // ACN max length with spaces
+            formattedValue = formatACN(value).slice(0, 11);
         } else if (name === 'postcode') {
-            formattedValue = value.replace(/\D/g, '').slice(0, 4); // Postcode max length
+            formattedValue = value.replace(/\D/g, '').slice(0, 4);
         }
         setClientDetails((prevDetails) => ({
             ...prevDetails,
