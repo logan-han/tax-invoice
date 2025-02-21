@@ -22,7 +22,7 @@ jobs:
           node-version: '22'
 
       - name: Install dependencies
-        run: npm install
+        run: yarn install
 
       - name: Run tests
         run: npx jest --coverage
@@ -33,7 +33,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           
       - name: Run build
-        run: npm run build
+        run: yarn run build
 
       - name: Deploy
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
