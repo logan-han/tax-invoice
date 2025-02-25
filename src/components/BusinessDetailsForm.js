@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles.css';
 import { formatABN, formatACN, formatBSB } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
+import AddressAutocomplete from './AddressAutocomplete';
 
 const BusinessDetailsForm = ({ onChange }) => {
     const [businessDetails, setBusinessDetails] = useState({
@@ -37,6 +38,32 @@ const BusinessDetailsForm = ({ onChange }) => {
         };
         setBusinessDetails(details);
     }, []);
+
+    const handlePlaceSelected = (place) => {
+        const addressComponents = place.address_components.reduce((acc, component) => {
+            const types = component.types;
+            if (types.includes('street_number')) {
+                acc.street_number = component.long_name;
+            } else if (types.includes('route')) {
+                acc.route = component.long_name;
+            } else if (types.includes('locality')) {
+                acc.suburb = component.long_name;
+            } else if (types.includes('administrative_area_level_1')) {
+                acc.state = component.short_name;
+            } else if (types.includes('postal_code')) {
+                acc.postcode = component.long_name;
+            }
+            return acc;
+        }, {});
+
+        setBusinessDetails((prevDetails) => ({
+            ...prevDetails,
+            street: `${addressComponents.street_number || ''} ${addressComponents.route || ''}`.trim(),
+            suburb: addressComponents.suburb || '',
+            state: addressComponents.state || '',
+            postcode: addressComponents.postcode || ''
+        }));
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -85,6 +112,10 @@ const BusinessDetailsForm = ({ onChange }) => {
                 <div>
                     <label htmlFor="businessName">Business Name:</label>
                     <input id="businessName" type="text" name="name" value={businessDetails.name} onChange={handleChange} />
+                </div>
+                <div>
+                    <label htmlFor="fullAddress">Address:</label>
+                    <AddressAutocomplete onPlaceSelected={handlePlaceSelected} placeholder="Enter your business address" />
                 </div>
                 <div>
                     <label htmlFor="street">Street:</label>
