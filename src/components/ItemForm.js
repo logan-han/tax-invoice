@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, currency: 'AUD' }, onCurrencyRemarkChange = () => {} }) => {
+    useEffect(() => {
+        if (items.length === 0) {
+            onChange([{ name: '', quantity: 1, price: 0, gst: false }]);
+        }
+    }, [items, onChange]);
+
     const handleItemChange = (index, event) => {
         const newItems = [...items];
         const { name, value, type, checked } = event.target;

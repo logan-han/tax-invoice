@@ -213,7 +213,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                     </tbody>
                 </table>
             </div>
-            <button onClick={generatePDF} className="button">Generate PDF</button>
+            <button onClick={generatePDF} className="button pdf-button">Generate PDF</button>
         </div>
     );
 };

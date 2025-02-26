@@ -15,6 +15,8 @@ const ClientDetailsForm = ({ onChange }) => {
         acn: ''
     });
 
+    const [showManualFields, setShowManualFields] = useState(false);
+
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
         const details = {
@@ -98,29 +100,36 @@ const ClientDetailsForm = ({ onChange }) => {
                 </div>
                 <div>
                     <label htmlFor="fullAddress">Address:</label>
-                    <AddressAutocomplete onPlaceSelected={handlePlaceSelected} placeholder="Enter the client address" />
+                    <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter the client address" />
                 </div>
-                <div>
-                    <label htmlFor="street">Street:</label>
-                    <input id="street" type="text" name="street" value={clientDetails.street} onChange={handleChange} />
-                </div>
-                <div>
-                    <label htmlFor="suburb">Suburb:</label>
-                    <input id="suburb" type="text" name="suburb" value={clientDetails.suburb} onChange={handleChange} />
-                </div>
-                <div>
-                    <label htmlFor="state">State:</label>
-                    <select id="state" name="state" value={clientDetails.state} onChange={handleChange} className="dropdown">
-                        <option value="">Select State</option>
-                        {AUSTRALIAN_STATES.map((state) => (
-                            <option key={state} value={state}>{state}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <label htmlFor="postcode">Postcode:</label>
-                    <input id="postcode" type="text" name="postcode" value={clientDetails.postcode} onChange={handleChange} />
-                </div>
+                <button type="button" onClick={() => setShowManualFields(!showManualFields)} style={{ marginBottom: '10px' }}>
+                    {showManualFields ? 'Hide Manual Entry' : 'Enter Manually'}
+                </button>
+                {showManualFields && (
+                    <>
+                        <div>
+                            <label htmlFor="street">Street:</label>
+                            <input id="street" type="text" name="street" value={clientDetails.street} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label htmlFor="suburb">Suburb:</label>
+                            <input id="suburb" type="text" name="suburb" value={clientDetails.suburb} onChange={handleChange} />
+                        </div>
+                        <div>
+                            <label htmlFor="state">State:</label>
+                            <select id="state" name="state" value={clientDetails.state} onChange={handleChange} className="dropdown">
+                                <option value="">Select State</option>
+                                {AUSTRALIAN_STATES.map((state) => (
+                                    <option key={state} value={state}>{state}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div>
+                            <label htmlFor="postcode">Postcode:</label>
+                            <input id="postcode" type="text" name="postcode" value={clientDetails.postcode} onChange={handleChange} />
+                        </div>
+                    </>
+                )}
                 <div>
                     <label htmlFor="abn">ABN:</label>
                     <input id="abn" type="text" name="abn" value={clientDetails.abn} onChange={handleChange} />
