@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Fragment } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import '../styles.css';
@@ -65,152 +65,79 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
         <div>
             <div id="invoice" className="invoice">
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="table">
-                    <tbody>
-                        <tr>
-                            <td valign="top">
-                                Bill To: <br /><br />
-                                <table width="100%" cellSpacing="0" cellPadding="0">
-                                    <tbody>
-                                        <tr>
-                                            <td valign="top" width="35%" className="clientDetails">
-                                                <strong>{clientDetails.name}</strong><br />
-                                                {clientDetails.abn && <>ABN: {clientDetails.abn}<br /></>}
-                                                {clientDetails.acn && <>ACN: {clientDetails.acn}<br /></>}
-                                                {clientDetails.street}<br />
-                                                {clientDetails.suburb} {clientDetails.state} {clientDetails.postcode}<br />
-                                                {clientDetails.email && <>Email: {clientDetails.email}<br /></>}
-                                                {clientDetails.phone && <>Phone: {clientDetails.phone}<br /></>}
-                                            </td>
-                                            <td valign="top" width="35%"></td>
-                                            <td valign="top" width="30%" className="invoiceDates">
-                                                <table className="dateBox">
-                                                    <tbody>
-                                                        <tr>
-                                                            <td className="dateLabel" style={{ textAlign: 'right' }}>Invoice Date:</td>
-                                                            <td className="dateValue">{formatDate(invoiceDate)}</td>
-                                                        </tr>
-                                                        {dueDate && (
-                                                            <tr>
-                                                                <td className="dateLabel" style={{ textAlign: 'right' }}><b>Due Date:</b></td>
-                                                                <td className="dateValue">{formatDate(dueDate)}</td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <table width="100%" height="100" cellSpacing="0" cellPadding="0">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <div align="center" className="invoiceNumber">Tax Invoice # {invoiceNumber}</div>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <table width="100%" cellSpacing="0" cellPadding="2" border="1" bordercolor="#CCCCCC">
-                                    <tbody>
-                                        <tr>
-                                            <td width="25%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Description</strong></td>
-                                            <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Qty</strong></td>
-                                            <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Unit Price</strong></td>
-                                            <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>GST</strong></td>
-                                            <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong></td>
-                                        </tr>
-                                        {items.map((item, index) => (
-                                            <tr key={index}>
-                                                <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.name}</td>
-                                                <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.quantity}</td>
-                                                <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.price)}</td>
-                                                <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.gst ? '10%' : '0%'}</td>
-                                                <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.quantity * item.price * (item.gst ? 1.1 : 1))}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                                <table width="100%" cellSpacing="0" cellPadding="2" border="0">
-                                    <tbody>
-                                        <tr>
-                                            <td>
-                                                <table width="100%" cellSpacing="0" cellPadding="2" border="0">
-                                                    <tbody>
-                                                        {gst > 0 && (
-                                                            <>
-                                                                <tr>
-                                                                    <td align="right" className="tableCell">Subtotal</td>
-                                                                    <td align="right" className="tableCell">{formatCurrency(total)}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td align="right" className="tableCell">TOTAL GST(10%)</td>
-                                                                    <td align="right" className="tableCell">{formatCurrency(gst)}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
-                                                                    <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
-                                                                </tr>
-                                                            </>
-                                                        )}
-                                                        {gst === 0 && (
-                                                            <tr>
-                                                                <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
-                                                                <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
-                                                            </tr>
-                                                        )}
-                                                    </tbody>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <table width="100%" height="50">
-                                    <tbody>
-                                        <tr>
-                                            <td className="footer"></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                                <table width="100%" cellSpacing="0" cellPadding="2">
-                                    <tbody>
-                                        <tr>
-                                            <td width="33%" className="footerDetails" valign="top">
-                                                <b>{businessDetails.name}</b><br />
-                                                {businessDetails.abn && <>ABN: {businessDetails.abn}<br /></>}
-                                                {businessDetails.acn && <>ACN: {businessDetails.acn}<br /></>}
-                                                {businessDetails.street} <br />
-                                                {businessDetails.suburb} {businessDetails.state} {businessDetails.postcode} <br />
-                                                {businessDetails.email && <>{businessDetails.email}<br /></>}
-                                                {businessDetails.phone && <>{businessDetails.phone}<br /></>}
-                                            </td>
-                                            {businessDetails.bsb && businessDetails.accountNumber && (
-                                                <td valign="top" width="34%" className="footerDetails" align="right">
-                                                    <table>
-                                                        <tbody>
-                                                            <tr>
-                                                                <td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>Bank Account Details</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="footerDetailsLabel" style={{ textAlign: 'right' }}>BSB:</td>
-                                                                <td className="footerDetailsValue">{businessDetails.bsb}</td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td className="footerDetailsLabel" style={{ textAlign: 'right' }}>Account No:</td>
-                                                                <td className="footerDetailsValue">{businessDetails.accountNumber}</td>
-                                                            </tr>
-                                                        </tbody>
-                                                    </table>
-                                                </td>
-                                            )}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </tbody>
+                    <tbody><tr>
+                        <td valign="top">Bill To: <br /><br />
+                            <table width="100%" cellSpacing="0" cellPadding="0">
+                                <tbody><tr>
+                                    <td valign="top" width="35%" className="clientDetails">
+                                        <strong>{clientDetails.name}</strong><br />
+                                        {clientDetails.abn && <Fragment>ABN: {clientDetails.abn}<br /></Fragment>}
+                                        {clientDetails.acn && <Fragment>ACN: {clientDetails.acn}<br /></Fragment>}
+                                        {clientDetails.street}<br />
+                                        {clientDetails.suburb} {clientDetails.state} {clientDetails.postcode}<br />
+                                        {clientDetails.email && <Fragment>Email: {clientDetails.email}<br /></Fragment>}
+                                        {clientDetails.phone && <Fragment>Phone: {clientDetails.phone}<br /></Fragment>}
+                                    </td>
+                                     <td valign="top" width="35%"/>
+                                    <td valign="top" width="30%" className="invoiceDates">
+                                        <table className="dateBox"><tbody>
+                                            <tr><td className="dateLabel" style={{ textAlign: 'right' }}>Invoice Date:</td><td className="dateValue">{formatDate(invoiceDate)}</td></tr>
+                                            {dueDate && <tr><td className="dateLabel" style={{ textAlign: 'right' }}><b>Due Date:</b></td><td className="dateValue">{formatDate(dueDate)}</td></tr>}
+                                        </tbody></table>
+                                    </td>
+                                </tr></tbody>
+                            </table>
+                            <table width="100%" height="100" cellSpacing="0" cellPadding="0"><tbody><tr>
+                                    <td><div align="center" className="invoiceNumber">Tax Invoice # {invoiceNumber}</div></td>
+                                </tr></tbody>
+                            </table>
+                            <table width="100%" cellSpacing="0" cellPadding="2" border="1" bordercolor="#CCCCCC">
+                                <tbody>
+                                    <tr><td width="25%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Description</strong></td><td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Qty</strong></td><td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Unit Price</strong></td><td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>GST</strong></td><td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong></td></tr>
+                                    {items.map((item, index) => (
+                                        <tr key={index}><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.name}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.quantity}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.price)}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.gst ? '10%' : '0%'}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.quantity * item.price * (item.gst ? 1.1 : 1))}</td></tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                            <table width="100%" cellSpacing="0" cellPadding="2" border="0">
+                                <tbody>
+                                    {gst > 0 ? (
+                                        <Fragment>
+                                            <tr><td align="right" className="tableCell">Subtotal</td><td align="right" className="tableCell">{formatCurrency(total)}</td></tr>
+                                            <tr><td align="right" className="tableCell">TOTAL GST(10%)</td><td align="right" className="tableCell">{formatCurrency(gst)}</td></tr>
+                                            <tr><td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td><td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td></tr>
+                                        </Fragment>
+                                    ) : (
+                                        <tr><td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td><td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td></tr>
+                                    )}
+                                </tbody>
+                            </table>
+                            <table width="100%" height="50"><tbody><tr><td className="footer"></td></tr></tbody></table>
+                            <table width="100%" cellSpacing="0" cellPadding="2">
+                                <tbody><tr>
+                                    <td width="33%" className="footerDetails" valign="top">
+                                        <b>{businessDetails.name}</b><br />
+                                        {businessDetails.abn && <Fragment>ABN: {businessDetails.abn}<br /></Fragment>}
+                                        {businessDetails.acn && <Fragment>ACN: {businessDetails.acn}<br /></Fragment>}
+                                        {businessDetails.street}<br />
+                                        {businessDetails.suburb} {businessDetails.state} {businessDetails.postcode} <br />
+                                        {businessDetails.email && <Fragment>{businessDetails.email}<br /></Fragment>}
+                                        {businessDetails.phone && <Fragment>{businessDetails.phone}<br /></Fragment>}
+                                    </td>
+                                    {businessDetails.bsb && businessDetails.accountNumber && (
+                                        <td valign="top" width="34%" className="footerDetails" align="right">
+                                            <table><tbody>
+                                                <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>Bank Account Details</td></tr>
+                                                <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td></tr>
+                                                <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>BSB:</td><td className="footerDetailsValue">{businessDetails.bsb}</td></tr>
+                                                <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>Account No:</td><td className="footerDetailsValue">{businessDetails.accountNumber}</td></tr>
+                                            </tbody></table>
+                                        </td>
+                                    )}
+                                </tr></tbody>
+                            </table>
+                        </td>
+                    </tr></tbody>
                 </table>
             </div>
             <button onClick={generatePDF} className="button pdf-button">Generate PDF</button>
