@@ -247,3 +247,41 @@ button:hover, .button:hover {
 .footerDetailsValue {
     text-align: right;
 }
+/* ------------------------------------------------- */
+/*                  Media Queries                  */
+/* ------------------------------------------------- */
+
+/* Responsive design for smaller screens */
+@media (max-width: 768px) {
+    body {
+        padding: 10px; /* Reduce padding on smaller screens */
+    }
+
+    form {
+        padding: 20px;
+    }
+    /* Add these new styles to handle the invoice on smaller screens*/
+    .invoice {
+        padding: 10px; /* Reduce padding on smaller screens */
+        border: none; /* Remove border on mobile */
+    }
+    .table {
+        width: 100%;
+        height: auto;
+    }
+    .clientDetails, .invoiceDates, .footerDetails {
+        font-size: 10px;
+    }
+
+    .dateBox {
+        padding: 2px;
+    }
+    .invoiceNumber {
+        font-size: 12px;
+    }
+
+    .tableHeader, .tableCell, .amountInWords, .footer, .footerDetails {
+        font-size: 10px;
+    }
+}
+

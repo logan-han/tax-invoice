@@ -66,7 +66,8 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
             <div id="invoice" className="invoice">
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="table">
                     <tbody><tr>
-                        <td valign="top">Bill To: <br /><br />
+                        <td valign="top" style={{ width: '100%' }}> {/* Add width:100% here */}
+                            Bill To: <br /><br />
                             <table width="100%" cellSpacing="0" cellPadding="0">
                                 <tbody><tr>
                                     <td valign="top" width="35%" className="clientDetails">
@@ -80,7 +81,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     </td>
                                      <td valign="top" width="35%"/>
                                     <td valign="top" width="30%" className="invoiceDates">
-                                        <table className="dateBox"><tbody>
+                                        <table className="dateBox" style={{ width: '100%' }}><tbody>
                                             <tr><td className="dateLabel" style={{ textAlign: 'right' }}>Invoice Date:</td><td className="dateValue">{formatDate(invoiceDate)}</td></tr>
                                             {dueDate && <tr><td className="dateLabel" style={{ textAlign: 'right' }}><b>Due Date:</b></td><td className="dateValue">{formatDate(dueDate)}</td></tr>}
                                         </tbody></table>
@@ -126,12 +127,14 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     </td>
                                     {businessDetails.bsb && businessDetails.accountNumber && (
                                         <td valign="top" width="34%" className="footerDetails" align="right">
-                                            <table><tbody>
-                                                <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>Bank Account Details</td></tr>
-                                                <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td></tr>
-                                                <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>BSB:</td><td className="footerDetailsValue">{businessDetails.bsb}</td></tr>
-                                                <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>Account No:</td><td className="footerDetailsValue">{businessDetails.accountNumber}</td></tr>
-                                            </tbody></table>
+                                            <table style={{width: "100%", lineHeight: "1.2"}}> {/* add lineHeight: 1.2 here */}
+                                                <tbody>
+                                                    <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right', paddingBottom: '5px' }}>Bank Account Details</td></tr> {/* add paddingBottom: 5px here */}
+                                                    <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td></tr>
+                                                    <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>BSB:</td><td className="footerDetailsValue">{businessDetails.bsb}</td></tr>
+                                                    <tr><td className="footerDetailsLabel" style={{ textAlign: 'right' }}>Account No:</td><td className="footerDetailsValue">{businessDetails.accountNumber}</td></tr>
+                                                </tbody>
+                                            </table>
                                         </td>
                                     )}
                                 </tr></tbody>
