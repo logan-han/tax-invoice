@@ -283,5 +283,10 @@ button:hover, .button:hover {
     .tableHeader, .tableCell, .amountInWords, .footer, .footerDetails {
         font-size: 10px;
     }
+
+    /* Prevent word wrapping for Invoice Date and Due Date */
+    .dateLabel, .dateValue {
+        white-space: nowrap;
+    }
 }
 
