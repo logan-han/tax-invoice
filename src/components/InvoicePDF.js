@@ -48,9 +48,9 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
         const input = document.getElementById('invoice');
 
         html2canvas(input, {
-          scale: 2
+          scale: 1
         }).then((canvas) => {
-          const imgData = canvas.toDataURL('image/png');
+          const imgData = canvas.toDataURL('image/jpeg', 0.90);
           const pdf = new jsPDF('p', 'mm', 'a4');
           const imgProps = pdf.getImageProperties(imgData);
           const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -63,11 +63,11 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
           let position = 0;
 
             if (imgHeight <= pdfHeight) {
-                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
             } else {
                 let currentHeight = 0;
                 while (currentHeight < imgHeight) {
-                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
                     currentHeight += pdfHeight
                     if (currentHeight < imgHeight){
                         pdf.addPage()
