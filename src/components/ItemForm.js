@@ -14,7 +14,7 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
                     name: itemName,
                     quantity: parseInt(queryParams.get(`itemQuantity_${i}`)) || 1,
                     price: parseFloat(queryParams.get(`itemPrice_${i}`)) || 0,
-                    gst: queryParams.get(`itemGst_${i}`) === 'true'
+                    gst: queryParams.get(`itemGst_${i}`) || 'no'
                 });
             }
             const storedCurrencyRemark = {
@@ -31,9 +31,9 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
 
     useEffect(() => {
         if (!isFirstLoad && items.length === 0) {
-            onChange([{ name: '', quantity: 1, price: 0, gst: false }]);
+            onChange([{ name: '', quantity: 1, price: 0, gst: 'no' }]);
         }
-        updateURL(items); // Update URL when items change
+        updateURL(items);
     }, [items, onChange, isFirstLoad]);
 
     useEffect(() => {
@@ -42,22 +42,22 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
 
     const handleItemChange = (index, event) => {
         const newItems = [...items];
-        const { name, value, type, checked } = event.target;
-        newItems[index][name] = type === 'checkbox' ? checked : value;
+        const { name, value } = event.target;
+        newItems[index][name] = value;
         onChange(newItems);
-        updateURL(newItems); // Update URL when an item changes
+        updateURL(newItems);
     };
 
     const handleAddItem = () => {
-        const newItems = [...items, { name: '', quantity: 1, price: 0, gst: false }];
+        const newItems = [...items, { name: '', quantity: 1, price: 0, gst: 'no' }];
         onChange(newItems);
-        updateURL(newItems); // Update URL when an item is added
+        updateURL(newItems);
     };
 
     const handleRemoveItem = (index) => {
         const newItems = items.filter((_, i) => i !== index);
         onChange(newItems);
-        updateURL(newItems); // Update URL when an item is removed
+        updateURL(newItems);
     };
 
     const handleCurrencyRemarkChange = (event) => {
@@ -67,14 +67,12 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
 
     const updateURL = (items) => {
         const url = new URL(window.location.href);
-        // remove previous item in the query
         for (let i = 0; i < 10; i++) {
             url.searchParams.delete(`itemName_${i}`);
             url.searchParams.delete(`itemQuantity_${i}`);
             url.searchParams.delete(`itemPrice_${i}`);
             url.searchParams.delete(`itemGst_${i}`);
         }
-        // Add current items in query
         items.forEach((item, index) => {
             url.searchParams.set(`itemName_${index}`, item.name);
             url.searchParams.set(`itemQuantity_${index}`, item.quantity);
@@ -91,25 +89,34 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
         <div>
             <h2>Items</h2>
             <form>
-                <label>
-                    <input type="checkbox" name="enabled" checked={currencyRemark.enabled} onChange={handleCurrencyRemarkChange} />
-                    Add Currency
-                </label>
-                {currencyRemark.enabled && (
-                    <div style={{ marginBottom: '20px' }}>
-                        <input type="text" name="currency" placeholder="Currency" value={currencyRemark.currency} onChange={handleCurrencyRemarkChange} />
-                    </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <label className="currency-checkbox" style={{ marginRight: '10px' }}>
+                        <input type="checkbox" name="enabled" checked={currencyRemark.enabled} onChange={handleCurrencyRemarkChange} />
+                        <span className="checkmark"></span>
+                        Add Currency
+                    </label>
+                    {currencyRemark.enabled && (
+                        <input type="text" name="currency" placeholder="Currency" value={currencyRemark.currency} onChange={handleCurrencyRemarkChange} style={{ width: '80px' }} />
+                    )}
+                </div>
                 {items.map((item, index) => (
-                    <div key={index} style={{ marginBottom: '20px' }}>
-                        <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} />
-                        <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} />
-                        <input type="number" name="price" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(index, e)} />
-                        <label>
-                            <input type="checkbox" name="gst" checked={item.gst} onChange={(e) => handleItemChange(index, e)} />
-                            Add GST
+                    <div key={index} style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
+                        <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} style={{ flex: 2, marginRight: '10px' }} />
+                        <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} style={{ flex: 0.5, marginRight: '10px' }} />
+                        <div style={{ position: 'relative', flex: 1.5, marginRight: '10px' }}>
+                            <span style={{ position: 'absolute', left: '10px', top: '40%', transform: 'translateY(-50%)'}}>$</span>
+                            <input type="number" name="price" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(index, e)} style={{ paddingLeft: '20px' }} />
+                        </div>
+                        <label style={{ flex: 1, marginRight: '10px', marginBottom: '15px' }}>
+                            <select name="gst" value={item.gst} onChange={(e) => handleItemChange(index, e)} className="gst-dropdown">
+                                <option value="no">No GST</option>
+                                <option value="add">Add GST</option>
+                                <option value="inclusive">Incl. GST</option>
+                            </select>
                         </label>
-                        <button type="button" onClick={() => handleRemoveItem(index)}>Remove Item</button>
+                        {items.length > 1 && (
+                            <button type="button" onClick={() => handleRemoveItem(index)} style={{ padding: '5px 10px', marginBottom: '15px' }}>Remove</button>
+                        )}
                     </div>
                 ))}
                 <div style={{ marginTop: '20px' }}>

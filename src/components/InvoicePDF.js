@@ -10,11 +10,19 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
 
     useEffect(() => {
         const calculateTotal = () => {
-            return items.reduce((total, item) => total + item.quantity * item.price, 0);
+            return items.reduce((total, item) => 
+                total + item.quantity * (item.gst === 'inclusive' ? item.price / 1.1 : item.price), 0);
         };
 
         const calculateGST = () => {
-            return items.reduce((totalGST, item) => totalGST + (item.gst ? item.quantity * item.price * 0.1 : 0), 0);
+            return items.reduce((totalGST, item) => {
+                if (item.gst === 'add') {
+                    return totalGST + item.quantity * item.price * 0.1;
+                } else if (item.gst === 'inclusive') {
+                    return totalGST + item.quantity * item.price * (1 - 1 / 1.1);
+                }
+                return totalGST;
+            }, 0);
         };
 
         const total = calculateTotal();
@@ -38,28 +46,17 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
 
     const generatePDF = () => {
         const input = document.getElementById('invoice');
-        // Set the PDF dimensions to A4 size (210mm x 297mm)
-        const pdfWidth = 210;
-        const pdfHeight = 297;
 
         html2canvas(input, {
-          scale: 2, // Increase scale for better quality (optional)
-          logging: true, // Enable logging for debugging (optional)
-          useCORS: true, // Enable cross-origin resource loading (if needed)
+          scale: 2
         }).then((canvas) => {
           const imgData = canvas.toDataURL('image/png');
-          // Create a new jsPDF instance with A4 size
           const pdf = new jsPDF('p', 'mm', 'a4');
           const imgProps = pdf.getImageProperties(imgData);
           const pdfWidth = pdf.internal.pageSize.getWidth();
           const pdfHeight = pdf.internal.pageSize.getHeight();
-
-          // Calculate the image's aspect ratio
           const imgAspectRatio = imgProps.width / imgProps.height;
-          // Calculate the scale factor to fit the image within the PDF's width
           const scaleFactor = pdfWidth / imgProps.width;
-
-          // Calculate the scaled image dimensions
           const imgWidth = pdfWidth;
           const imgHeight = imgProps.height * scaleFactor;
 
@@ -103,7 +100,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     </td>
                                      <td valign="top" width="35%"/>
                                     <td valign="top" width="30%" className="invoiceDates">
-                                        <table className="dateBox" style={{ width: '100%' }}><tbody>
+                                        <table className="dateBox" style={{ width: '100%', lineHeight: "1.2"}}><tbody>
                                             <tr><td className="dateLabel" style={{ textAlign: 'right' }}>Invoice Date:</td><td className="dateValue">{formatDate(invoiceDate)}</td></tr>
                                             {dueDate && <tr><td className="dateLabel" style={{ textAlign: 'right' }}><b>Due Date:</b></td><td className="dateValue">{formatDate(dueDate)}</td></tr>}
                                         </tbody></table>
@@ -116,9 +113,31 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                             </table>
                             <table width="100%" cellSpacing="0" cellPadding="2" border="1" bordercolor="#CCCCCC">
                                 <tbody>
-                                    <tr><td width="25%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Description</strong></td><td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Qty</strong></td><td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Unit Price</strong></td><td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>GST</strong></td><td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}><strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong></td></tr>
+                                    <tr>
+                                        <td width="25%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
+                                            <strong>Description</strong>
+                                        </td>
+                                        <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
+                                            <strong>Qty</strong>
+                                        </td>
+                                        <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
+                                            <strong>Unit Price</strong>
+                                        </td>
+                                        <td width="10%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
+                                            <strong>GST</strong>
+                                        </td>
+                                        <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
+                                            <strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong>
+                                        </td>
+                                    </tr>
                                     {items.map((item, index) => (
-                                        <tr key={index}><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.name}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.quantity}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.price)}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.gst ? '10%' : '0%'}</td><td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.quantity * item.price * (item.gst ? 1.1 : 1))}</td></tr>
+                                        <tr key={index}>
+                                            <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.name}</td>
+                                            <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.quantity}</td>
+                                            <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.gst === 'inclusive' ? item.price / 1.1 : item.price)}</td>
+                                            <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '0%'}</td>
+                                            <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>{formatCurrency(item.quantity * item.price)}</td>
+                                        </tr>
                                     ))}
                                 </tbody>
                             </table>
@@ -126,12 +145,24 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                 <tbody>
                                     {gst > 0 ? (
                                         <Fragment>
-                                            <tr><td align="right" className="tableCell">Subtotal</td><td align="right" className="tableCell">{formatCurrency(total)}</td></tr>
-                                            <tr><td align="right" className="tableCell">TOTAL GST(10%)</td><td align="right" className="tableCell">{formatCurrency(gst)}</td></tr>
-                                            <tr><td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td><td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td></tr>
+                                            <tr>
+                                                <td align="right" className="tableCell">Subtotal</td>
+                                                <td align="right" className="tableCell">{formatCurrency(total)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td align="right" className="tableCell">TOTAL GST(10%)</td>
+                                                <td align="right" className="tableCell">{formatCurrency(gst)}</td>
+                                            </tr>
+                                            <tr>
+                                                <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                                <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
+                                            </tr>
                                         </Fragment>
                                     ) : (
-                                        <tr><td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td><td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td></tr>
+                                        <tr>
+                                            <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                            <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
+                                        </tr>
                                     )}
                                 </tbody>
                             </table>
@@ -149,7 +180,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     </td>
                                     {businessDetails.bsb && businessDetails.accountNumber && (
                                         <td valign="top" width="34%" className="footerDetails" align="right">
-                                            <table style={{width: "100%", lineHeight: "1.2"}}> {/* add lineHeight: 1.2 here */}
+                                            <table style={{width: "100%", lineHeight: "1.2"}}>
                                                 <tbody>
                                                     <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right', paddingBottom: '5px' }}>Bank Account Details</td></tr> {/* add paddingBottom: 5px here */}
                                                     <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td></tr>
