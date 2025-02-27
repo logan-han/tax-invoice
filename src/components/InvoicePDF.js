@@ -38,32 +38,54 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
 
     const generatePDF = () => {
         const input = document.getElementById('invoice');
-        html2canvas(input).then((canvas) => {
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('p', 'mm', 'a4');
-            const imgWidth = 190;
-            const pageHeight = pdf.internal.pageSize.height;
-            const imgHeight = (canvas.height * imgWidth) / canvas.width;
-            let heightLeft = imgHeight;
-            let position = 10;
+        // Set the PDF dimensions to A4 size (210mm x 297mm)
+        const pdfWidth = 210;
+        const pdfHeight = 297;
 
-            pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
+        html2canvas(input, {
+          scale: 2, // Increase scale for better quality (optional)
+          logging: true, // Enable logging for debugging (optional)
+          useCORS: true, // Enable cross-origin resource loading (if needed)
+        }).then((canvas) => {
+          const imgData = canvas.toDataURL('image/png');
+          // Create a new jsPDF instance with A4 size
+          const pdf = new jsPDF('p', 'mm', 'a4');
+          const imgProps = pdf.getImageProperties(imgData);
+          const pdfWidth = pdf.internal.pageSize.getWidth();
+          const pdfHeight = pdf.internal.pageSize.getHeight();
 
-            while (heightLeft >= 0) {
-                position = heightLeft - imgHeight + 10;
-                pdf.addPage();
-                pdf.addImage(imgData, 'PNG', 10, position, imgWidth, imgHeight);
-                heightLeft -= pageHeight;
+          // Calculate the image's aspect ratio
+          const imgAspectRatio = imgProps.width / imgProps.height;
+          // Calculate the scale factor to fit the image within the PDF's width
+          const scaleFactor = pdfWidth / imgProps.width;
+
+          // Calculate the scaled image dimensions
+          const imgWidth = pdfWidth;
+          const imgHeight = imgProps.height * scaleFactor;
+
+          let position = 0;
+
+            if (imgHeight <= pdfHeight) {
+                pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            } else {
+                let currentHeight = 0;
+                while (currentHeight < imgHeight) {
+                    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                    currentHeight += pdfHeight
+                    if (currentHeight < imgHeight){
+                        pdf.addPage()
+                        position = -currentHeight
+                    }
+                }
             }
 
-            pdf.save(`invoice_${formatDate(invoiceDate).replace(/-/g, '')}-${invoiceNumber}.pdf`);
+          pdf.save(`invoice_${formatDate(invoiceDate).replace(/-/g, '')}-${invoiceNumber}.pdf`);
         });
     };
 
     return (
         <div>
-            <div id="invoice" className="invoice">
+            <div id="invoice" className="invoice" style={{ width: '210mm', margin: '0 auto' }}>
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="table">
                     <tbody><tr>
                         <td valign="top" style={{ width: '100%' }}> {/* Add width:100% here */}
