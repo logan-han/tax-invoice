@@ -113,11 +113,11 @@ const ClientDetailsForm = ({ onChange }) => {
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
                             <div style={{ flex: 1, marginRight: '10px' }}>
-                                <label htmlFor="suburb">Suburb</label>
+                                <label htmlFor="suburb" align="center">Suburb</label>
                                 <input id="suburb" type="text" name="suburb" value={clientDetails.suburb} onChange={handleChange} />
                             </div>
-                            <div style={{ flex: 1, marginRight: '10px' }}>
-                                <label htmlFor="state">State</label>
+                            <div style={{ flex: 0.5, marginRight: '10px' }}>
+                                <label htmlFor="state" align="center">State</label>
                                 <select id="state" name="state" value={clientDetails.state} onChange={handleChange} className="dropdown">
                                     <option value="">Select State</option>
                                     {AUSTRALIAN_STATES.map((state) => (
@@ -126,7 +126,7 @@ const ClientDetailsForm = ({ onChange }) => {
                                 </select>
                             </div>
                             <div style={{ flex: 0.5 }}>
-                                <label htmlFor="postcode">Postcode</label>
+                                <label htmlFor="postcode" align="center">Postcode</label>
                                 <input id="postcode" type="text" name="postcode" value={clientDetails.postcode} onChange={handleChange} />
                             </div>
                         </div>

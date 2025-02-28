@@ -128,52 +128,60 @@ const BusinessDetailsForm = ({ onChange }) => {
                             <label htmlFor="street">Street:</label>
                             <input id="street" type="text" name="street" value={businessDetails.street} onChange={handleChange} />
                         </div>
-                        <div>
-                            <label htmlFor="suburb">Suburb:</label>
-                            <input id="suburb" type="text" name="suburb" value={businessDetails.suburb} onChange={handleChange} />
-                        </div>
-                        <div>
-                            <label htmlFor="state">State:</label>
-                            <select id="state" name="state" value={businessDetails.state} onChange={handleChange} className="dropdown">
-                                <option value="">Select State</option>
-                                {AUSTRALIAN_STATES.map((state) => (
-                                    <option key={state} value={state}>{state}</option>
-                                ))}
-                            </select>
-                        </div>
-                        <div>
-                            <label htmlFor="postcode">Postcode:</label>
-                            <input id="postcode" type="text" name="postcode" value={businessDetails.postcode} onChange={handleChange} />
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                            <div style={{ flex: 1, marginRight: '10px' }}>
+                                <label htmlFor="suburb">Suburb</label>
+                                <input id="suburb" type="text" name="suburb" value={businessDetails.suburb} onChange={handleChange} />
+                            </div>
+                            <div style={{ flex: 0.5, marginRight: '10px' }}>
+                                <label htmlFor="state">State</label>
+                                <select id="state" name="state" value={businessDetails.state} onChange={handleChange} className="dropdown">
+                                    <option value="">Select State</option>
+                                    {AUSTRALIAN_STATES.map((state) => (
+                                        <option key={state} value={state}>{state}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div style={{ flex: 0.5 }}>
+                                <label htmlFor="postcode">Postcode</label>
+                                <input id="postcode" type="text" name="postcode" value={businessDetails.postcode} onChange={handleChange} />
+                            </div>
                         </div>
                     </>
                 )}
-                <div>
-                    <label htmlFor="phone">Phone:</label>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                <div style={{ flex: 1, marginRight: '10px' }}>
+                    <label htmlFor="phone" align="center">Phone</label>
                     <input id="phone" type="text" name="phone" value={businessDetails.phone} onChange={handleChange} />
                 </div>
-                <div>
-                    <label htmlFor="email">Email:</label>
+                <div style={{ flex: 1}}>
+                    <label htmlFor="email" align="center">Email</label>
                     <input id="email" type="text" name="email" value={businessDetails.email} onChange={handleChange} />
                 </div>
-                <div>
-                    <label htmlFor="abn">ABN:</label>
-                    <input id="abn" type="text" name="abn" value={businessDetails.abn} onChange={handleChange} />
                 </div>
-                <div>
-                    <label htmlFor="acn">ACN:</label>
-                    <input id="acn" type="text" name="acn" value={businessDetails.acn} onChange={handleChange} />
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ flex: 1, marginRight: '10px' }}>
+                        <label htmlFor="abn" align="center">ABN</label>
+                        <input id="abn" type="text" name="abn" value={businessDetails.abn} onChange={handleChange} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label htmlFor="acn" align="center">ACN</label>
+                        <input id="acn" type="text" name="acn" value={businessDetails.acn} onChange={handleChange} />
+                    </div>
                 </div>
-                <div>
-                    <label htmlFor="accountName">Account Name:</label>
-                    <input id="accountName" type="text" name="accountName" value={businessDetails.accountName} onChange={handleChange} />
-                </div>
-                <div>
-                    <label htmlFor="bsb">BSB:</label>
-                    <input id="bsb" type="text" name="bsb" value={businessDetails.bsb} onChange={handleChange} />
-                </div>
-                <div>
-                    <label htmlFor="accountNumber">Account Number:</label>
-                    <input id="accountNumber" type="text" name="accountNumber" value={businessDetails.accountNumber} onChange={handleChange} />
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ flex: 0.5, marginRight: '10px' }}>
+                        <label htmlFor="accountName" align="center">Account Name</label>
+                        <input id="accountName" type="text" name="accountName" value={businessDetails.accountName} onChange={handleChange} />
+                    </div>
+                    <div style={{ flex: 0.2, marginRight: '10px' }}>
+                        <label htmlFor="bsb" align="center">BSB</label>
+                        <input id="bsb" type="text" name="bsb" value={businessDetails.bsb} onChange={handleChange} />
+                    </div>
+                    <div style={{ flex: 0.3 }}>
+                        <label htmlFor="accountNumber" align="center">Account Number</label>
+                        <input id="accountNumber" type="text" name="accountNumber" value={businessDetails.accountNumber} onChange={handleChange} />
+                    </div>
                 </div>
             </form>
         </div>
