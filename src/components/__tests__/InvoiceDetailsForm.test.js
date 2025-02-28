@@ -11,8 +11,8 @@ test('renders InvoiceDetailsForm component and updates details', () => {
     <InvoiceDetailsForm onChange={handleChange} />
   );
 
-  fireEvent.change(getByLabelText('Invoice Date:'), { target: { value: '02-02-2023' } });
-  fireEvent.change(getByLabelText('Invoice Number:'), { target: { value: '20230202-0002' } });
+  fireEvent.change(getByLabelText('Invoice Date'), { target: { value: '02-02-2023' } });
+  fireEvent.change(getByLabelText('Invoice Number'), { target: { value: '20230202-0002' } });
 
   expect(handleChange).toHaveBeenCalled();
 });

@@ -10,9 +10,12 @@ jest.mock('jspdf', () => {
     save: saveMock,
     addImage: jest.fn(),
     addPage: jest.fn(),
+    getImageProperties: jest.fn().mockReturnValue({ width: 210, height: 297 }),
     internal: {
       pageSize: {
-        height: 297
+        height: 297,
+        getWidth: jest.fn().mockReturnValue(210),
+        getHeight: jest.fn().mockReturnValue(297)
       }
     }
   }));

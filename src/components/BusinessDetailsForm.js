@@ -112,11 +112,11 @@ const BusinessDetailsForm = ({ onChange }) => {
             <h2>Business Details</h2>
             <form>
                 <div>
-                    <label htmlFor="businessName">Business Name:</label>
+                    <label htmlFor="businessName">Business Name</label>
                     <input id="businessName" type="text" name="name" value={businessDetails.name} onChange={handleChange} />
                 </div>
                 <div>
-                    <label htmlFor="fullAddress">Address:</label>
+                    <label htmlFor="fullAddress">Address</label>
                     <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter your business address" />
                 </div>
                 <button type="button" onClick={() => setShowManualFields(!showManualFields)} style={{ marginBottom: '10px' }}>
@@ -125,7 +125,7 @@ const BusinessDetailsForm = ({ onChange }) => {
                 {showManualFields && (
                     <>
                         <div>
-                            <label htmlFor="street">Street:</label>
+                            <label htmlFor="street">Street</label>
                             <input id="street" type="text" name="street" value={businessDetails.street} onChange={handleChange} />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>

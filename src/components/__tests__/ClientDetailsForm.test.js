@@ -50,10 +50,10 @@ beforeAll(() => {
 describe('ClientDetailsForm', () => {
     it('renders the form fields', () => {
         render(<ClientDetailsForm onChange={jest.fn()} />);
-        expect(screen.getByLabelText('Client Name:')).toBeInTheDocument();
-        expect(screen.getByLabelText('Address:')).toBeInTheDocument();
-        expect(screen.getByLabelText('ABN:')).toBeInTheDocument();
-        expect(screen.getByLabelText('ACN:')).toBeInTheDocument();
+        expect(screen.getByLabelText('Client Name')).toBeInTheDocument();
+        expect(screen.getByLabelText('Address')).toBeInTheDocument();
+        expect(screen.getByLabelText('ABN')).toBeInTheDocument();
+        expect(screen.getByLabelText('ACN')).toBeInTheDocument();
     });
 
     it('updates address fields when a place is selected', () => {
@@ -64,10 +64,10 @@ describe('ClientDetailsForm', () => {
 
         fireEvent.click(screen.getByText('Enter Manually'));
 
-        expect(screen.getByLabelText('Street:').value).toBe('123 Main St');
-        expect(screen.getByLabelText('Suburb:').value).toBe('Sydney');
-        expect(screen.getByLabelText('State:').value).toBe('NSW');
-        expect(screen.getByLabelText('Postcode:').value).toBe('2000');
+        expect(screen.getByLabelText('Street').value).toBe('123 Main St');
+        expect(screen.getByLabelText('Suburb').value).toBe('Sydney');
+        expect(screen.getByLabelText('State').value).toBe('NSW');
+        expect(screen.getByLabelText('Postcode').value).toBe('2000');
     });
 });
 
@@ -80,13 +80,13 @@ test('renders ClientDetailsForm component and updates details', () => {
 
   fireEvent.click(screen.getByText('Enter Manually'));
 
-  fireEvent.change(getByLabelText('Client Name:'), { target: { value: 'New Client' } });
-  fireEvent.change(getByLabelText('Street:'), { target: { value: '456 Avenue' } });
-  fireEvent.change(getByLabelText('Suburb:'), { target: { value: 'Suburbia' } });
-  fireEvent.change(getByLabelText('State:'), { target: { value: 'State' } });
-  fireEvent.change(getByLabelText('Postcode:'), { target: { value: '5678' } });
-  fireEvent.change(getByLabelText('ABN:'), { target: { value: '987654321' } });
-  fireEvent.change(getByLabelText('ACN:'), { target: { value: '123456789' } });
+  fireEvent.change(getByLabelText('Client Name'), { target: { value: 'New Client' } });
+  fireEvent.change(getByLabelText('Street'), { target: { value: '456 Avenue' } });
+  fireEvent.change(getByLabelText('Suburb'), { target: { value: 'Suburbia' } });
+  fireEvent.change(getByLabelText('State'), { target: { value: 'State' } });
+  fireEvent.change(getByLabelText('Postcode'), { target: { value: '5678' } });
+  fireEvent.change(getByLabelText('ABN'), { target: { value: '987654321' } });
+  fireEvent.change(getByLabelText('ACN'), { target: { value: '123456789' } });
 
   expect(handleChange).toHaveBeenCalled();
 });
