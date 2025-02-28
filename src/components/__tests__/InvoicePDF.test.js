@@ -72,6 +72,6 @@ test('generates PDF', async () => {
   await waitFor(() => {
     const jsPDFMock = require('jspdf');
     expect(jsPDFMock).toHaveBeenCalled();
-    expect(jsPDFMock().save).toHaveBeenCalledWith('invoice_01012025-0001.pdf');
+    expect(jsPDFMock().save).toHaveBeenCalledWith(`invoice_01012025-0001.pdf`);
   });
 });
