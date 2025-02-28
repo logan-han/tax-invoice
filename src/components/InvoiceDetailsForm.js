@@ -7,13 +7,13 @@ const InvoiceDetailsForm = ({ onChange }) => {
 
     useEffect(() => {
         const date = new Date();
-        const dateString = `${date.getDate().toString().padStart(2, '0')}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getFullYear()}`;
+        const dateString = date.toISOString().split('T')[0];
         setInvoiceDate(dateString);
         setInvoiceNumber(`${dateString.replace(/-/g, '')}-0001`);
         
         const dueDate = new Date(date);
         dueDate.setDate(dueDate.getDate() + 30);
-        const dueDateString = `${dueDate.getDate().toString().padStart(2, '0')}-${(dueDate.getMonth() + 1).toString().padStart(2, '0')}-${dueDate.getFullYear()}`;
+        const dueDateString = dueDate.toISOString().split('T')[0];
         setDueDate(dueDateString);
     }, []);
 
@@ -37,17 +37,19 @@ const InvoiceDetailsForm = ({ onChange }) => {
         <div className="form-container">
             <h2>Invoice Details</h2>
             <form>
-                <div>
-                    <label htmlFor="invoiceDate">Invoice Date:</label>
-                    <input id="invoiceDate" type="text" value={invoiceDate} onChange={handleDateChange} />
-                </div>
-                <div>
-                    <label htmlFor="invoiceNumber">Invoice Number:</label>
-                    <input id="invoiceNumber" type="text" value={invoiceNumber} onChange={handleNumberChange} />
-                </div>
-                <div>
-                    <label htmlFor="dueDate">Due Date:</label>
-                    <input id="dueDate" type="text" value={dueDate} onChange={handleDueDateChange} />
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
+                    <div style={{ flex: 1, marginRight: '10px' }}>
+                        <label htmlFor="invoiceDate" align="center">Invoice Date</label>
+                        <input id="invoiceDate" type="date" value={invoiceDate} onChange={handleDateChange} className="date-picker" />
+                    </div>
+                    <div style={{ flex: 1, marginRight: '10px' }}>
+                        <label htmlFor="dueDate" align="center">Due Date</label>
+                        <input id="dueDate" type="date" value={dueDate} onChange={handleDueDateChange} className="date-picker" />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                        <label htmlFor="invoiceNumber" align="center">Invoice Number</label>
+                        <input id="invoiceNumber" type="text" value={invoiceNumber} onChange={handleNumberChange} style={{ width: '100%' }} />
+                    </div>
                 </div>
             </form>
         </div>
