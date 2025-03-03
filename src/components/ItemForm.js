@@ -103,7 +103,7 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
                     <div key={index} style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
                         <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} style={{ flex: 2, marginRight: '10px' }} />
                         <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} style={{ flex: 0.5, marginRight: '10px' }} />
-                        <div style={{ position: 'relative', flex: 1.5, marginRight: '10px' }}>
+                        <div style={{ position: 'relative', flex: 1, marginRight: '10px' }}>
                             <span style={{ position: 'absolute', left: '10px', top: '40%', transform: 'translateY(-50%)'}}>$</span>
                             <input type="number" name="price" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(index, e)} style={{ paddingLeft: '20px' }} />
                         </div>
