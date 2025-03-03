@@ -10,9 +10,12 @@ jest.mock('jspdf', () => {
     save: saveMock,
     addImage: jest.fn(),
     addPage: jest.fn(),
+    getImageProperties: jest.fn().mockReturnValue({ width: 210, height: 297 }),
     internal: {
       pageSize: {
-        height: 297
+        height: 297,
+        getWidth: jest.fn().mockReturnValue(210),
+        getHeight: jest.fn().mockReturnValue(297)
       }
     }
   }));
@@ -69,6 +72,71 @@ test('generates PDF', async () => {
   await waitFor(() => {
     const jsPDFMock = require('jspdf');
     expect(jsPDFMock).toHaveBeenCalled();
-    expect(jsPDFMock().save).toHaveBeenCalledWith('invoice_01012025-0001.pdf');
+    expect(jsPDFMock().save).toHaveBeenCalledWith(`invoice_01012025-0001.pdf`);
   });
+});
+
+test('calculates GST correctly for "add" option', () => {
+  const businessDetails = { name: 'Business Name' };
+  const clientDetails = { name: 'Client Name' };
+  const items = [{ name: 'Item 1', quantity: 1, price: 100, gst: 'add' }];
+  const invoiceDate = '01-01-2025';
+  const invoiceNumber = '0001';
+
+  const { getAllByText } = render(
+    <InvoicePDF
+      businessDetails={businessDetails}
+      clientDetails={clientDetails}
+      items={items}
+      invoiceDate={invoiceDate}
+      invoiceNumber={invoiceNumber}
+    />
+  );
+
+  expect(getAllByText('$100.00')).toHaveLength(3); // Subtotal, Unit Price, Amount
+  expect(getAllByText('$10.00')).toHaveLength(1); // GST
+  expect(getAllByText('$110.00')).toHaveLength(1); // Total
+});
+
+test('calculates GST correctly for "inclusive" option', () => {
+  const businessDetails = { name: 'Business Name' };
+  const clientDetails = { name: 'Client Name' };
+  const items = [{ name: 'Item 1', quantity: 1, price: 110, gst: 'inclusive' }];
+  const invoiceDate = '01-01-2025';
+  const invoiceNumber = '0001';
+
+  const { getAllByText, getByText } = render(
+    <InvoicePDF
+      businessDetails={businessDetails}
+      clientDetails={clientDetails}
+      items={items}
+      invoiceDate={invoiceDate}
+      invoiceNumber={invoiceNumber}
+    />
+  );
+
+  expect(getAllByText('$100.00')).toHaveLength(2); // Subtotal, Unit Price
+  expect(getAllByText('$10.00')).toHaveLength(1); // GST
+  expect(getByText('$110.00', { selector: 'b' })).toBeInTheDocument(); // Total
+});
+
+test('calculates GST correctly for "none" option', () => {
+  const businessDetails = { name: 'Business Name' };
+  const clientDetails = { name: 'Client Name' };
+  const items = [{ name: 'Item 1', quantity: 1, price: 100, gst: 'none' }];
+  const invoiceDate = '01-01-2025';
+  const invoiceNumber = '0001';
+
+  const { getAllByText, getByText } = render(
+    <InvoicePDF
+      businessDetails={businessDetails}
+      clientDetails={clientDetails}
+      items={items}
+      invoiceDate={invoiceDate}
+      invoiceNumber={invoiceNumber}
+    />
+  );
+
+  expect(getAllByText('$100.00')).toHaveLength(3); // Subtotal, Unit Price, Amount
+  expect(getByText('$100.00', { selector: 'b' })).toBeInTheDocument(); // Total
 });

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles.css';
-import { formatABN, formatACN, formatBSB } from '../utils/formatters';
+import { formatABN, formatACN, formatBSB, formatPhoneNumber } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
 import AddressAutocomplete from './AddressAutocomplete';
 
@@ -78,6 +78,8 @@ const BusinessDetailsForm = ({ onChange }) => {
             formattedValue = formatBSB(value).slice(0, 7);
         } else if (name === 'postcode') {
             formattedValue = value.replace(/\D/g, '').slice(0, 4);
+        } else if (name === 'phone') {
+            formattedValue = formatPhoneNumber(value);
         }
         setBusinessDetails((prevDetails) => ({
             ...prevDetails,
@@ -112,11 +114,11 @@ const BusinessDetailsForm = ({ onChange }) => {
             <h2>Business Details</h2>
             <form>
                 <div>
-                    <label htmlFor="businessName">Business Name:</label>
+                    <label htmlFor="businessName">Business Name</label>
                     <input id="businessName" type="text" name="name" value={businessDetails.name} onChange={handleChange} />
                 </div>
                 <div>
-                    <label htmlFor="fullAddress">Address:</label>
+                    <label htmlFor="fullAddress">Address</label>
                     <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter your business address" />
                 </div>
                 <button type="button" onClick={() => setShowManualFields(!showManualFields)} style={{ marginBottom: '10px' }}>
@@ -125,7 +127,7 @@ const BusinessDetailsForm = ({ onChange }) => {
                 {showManualFields && (
                     <>
                         <div>
-                            <label htmlFor="street">Street:</label>
+                            <label htmlFor="street">Street</label>
                             <input id="street" type="text" name="street" value={businessDetails.street} onChange={handleChange} />
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
