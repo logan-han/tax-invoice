@@ -180,7 +180,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     </td>
                                     {businessDetails.bsb && businessDetails.accountNumber && (
                                         <td valign="top" width="34%" className="footerDetails" align="right">
-                                            <table style={{width: "50%", lineHeight: "1.2"}}>
+                                            <table style={{width: "60%", lineHeight: "1.2"}}>
                                                 <tbody>
                                                     <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right', paddingBottom: '5px' }}>Bank Account Details</td></tr> {/* add paddingBottom: 5px here */}
                                                     <tr><td colSpan="2" className="footerDetailsValue" style={{ textAlign: 'right' }}>{businessDetails.accountName}</td></tr>
