@@ -1,7 +1,7 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
-import '../styles.css';
+import '../styles.scss';
 
 const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoiceNumber, dueDate, currencyRemark = { enabled: false, currency: 'AUD' } }) => {
     const [total, setTotal] = useState(0);
@@ -82,6 +82,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
 
     return (
         <div>
+            <h2>Preview</h2>
             <div id="invoice" className="invoice" style={{ width: '210mm', margin: '0 auto' }}>
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="table">
                     <tbody><tr>
