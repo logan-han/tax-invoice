@@ -34,21 +34,21 @@ const InvoiceDetailsForm = ({ onChange }) => {
     };
 
     return (
-        <div className="form-container">
+        <div className="form-container w-100">
             <h2>Invoice Details</h2>
-            <form>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ flex: 1, marginRight: '10px' }}>
-                        <label htmlFor="invoiceDate" align="center">Invoice Date</label>
-                        <input id="invoiceDate" type="date" value={invoiceDate} onChange={handleDateChange} className="date-picker" />
+            <form style={{ maxWidth: '80%', width: '80%' }}>
+                <div className="row">
+                    <div className="group col-md-4">
+                        <label htmlFor="invoiceDate">Invoice Date</label>
+                        <input id="invoiceDate" type="date" value={invoiceDate} onChange={handleDateChange} className="form-control form-control-lg" />
                     </div>
-                    <div style={{ flex: 1, marginRight: '10px' }}>
-                        <label htmlFor="dueDate" align="center">Due Date</label>
-                        <input id="dueDate" type="date" value={dueDate} onChange={handleDueDateChange} className="date-picker" />
+                    <div className="group col-md-4">
+                        <label htmlFor="dueDate">Due Date</label>
+                        <input id="dueDate" type="date" value={dueDate} onChange={handleDueDateChange} className="form-control form-control-lg" />
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <label htmlFor="invoiceNumber" align="center">Invoice Number</label>
-                        <input id="invoiceNumber" type="text" value={invoiceNumber} onChange={handleNumberChange} style={{ width: '100%' }} />
+                    <div className="group col-md-4">
+                        <label htmlFor="invoiceNumber">Invoice Number</label>
+                        <input id="invoiceNumber" type="text" value={invoiceNumber} onChange={handleNumberChange} className="form-control" />
                     </div>
                 </div>
             </form>

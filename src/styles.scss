@@ -1,54 +1,45 @@
-/* ------------------------------------------------- */
-/*                  Global Styles                    */
-/* ------------------------------------------------- */
+@use 'bootstrap/scss/bootstrap' as *;
 
 body {
-    font-family: 'Roboto', sans-serif; /* Modern sans-serif font */
+    font-family: 'Roboto', sans-serif;
     margin: 0;
     padding: 20px;
-    background-color: #f8f9fa; /* Light gray background */
-    color: #343a40; /* Dark gray text */
-    line-height: 1.6; /* Improve readability */
+    background-color: #f8f9fa;
+    color: #343a40;
+    line-height: 1.6;
 }
 
-/* Headings */
 h1, h2 {
-    color: #007bff; /* Primary blue */
+    color: #007bff;
     text-align: center;
-    font-weight: 500; /* Slightly thinner font-weight */
-    margin-bottom: 20px; /* Increase spacing below headings */
+    font-weight: 500;
+    margin-bottom: 20px;
 }
 
 h1 {
-    font-size: 2.2rem; /* Larger font size for h1 */
+    font-size: 2.2rem;
 }
 
 h2 {
-    font-size: 1.8rem; /* Larger font size for h2 */
+    font-size: 1.8rem;
 }
-
-/* ------------------------------------------------- */
-/*                     Forms                        */
-/* ------------------------------------------------- */
 
 form {
     background-color: #fff;
     padding: 30px;
     border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Softer shadow */
-    margin: 0 auto 20px; /* Center the form horizontally, add margin below */
-    max-width: 600px; /* Control the maximum width of the form */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    margin: 0 auto 20px;
+    max-width: 600px;
 }
 
-/* Labels */
 label {
     display: block;
-    margin-bottom: 8px; /* Increased spacing */
-    font-weight: 600; /* Make labels bold */
-    color: #495057; /* Darker label color */
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
 }
 
-/* Input Fields */
 input[type="text"],
 input[type="number"],
 input[name="abn"],
@@ -57,17 +48,16 @@ input[name="bsb"],
 input[name="postcode"],
 input[type="email"],
 .dropdown {
-    width: 100%; /* Full width within the container */
+    width: 100%;
     padding: 12px;
-    margin-bottom: 15px; /* Increased spacing */
-    border: 1px solid #ced4da; /* Light gray border */
+    margin-bottom: 15px;
+    border: 1px solid #ced4da;
     border-radius: 4px;
-    background-color: #f8f9fa; /* Light gray input background */
-    box-sizing: border-box; /* Include padding and border in width */
-    transition: border-color 0.2s ease-in-out; /* Smooth transition on hover */
+    background-color: #f8f9fa;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease-in-out;
 }
 
-/* Input Field Hover */
 input[type="text"]:focus,
 input[type="number"]:focus,
 input[name="abn"]:focus,
@@ -76,11 +66,10 @@ input[name="bsb"]:focus,
 input[name="postcode"]:focus,
 input[type="email"]:focus,
 .dropdown:focus {
-    border-color: #007bff; /* Highlight on focus */
-    outline: none; /* Remove default outline */
+    border-color: #007bff;
+    outline: none;
 }
 
-/* Dropdown */
 .dropdown {
     appearance: none;
     -webkit-appearance: none;
@@ -91,7 +80,6 @@ input[type="email"]:focus,
     background-size: 10px;
 }
 
-/* GST Dropdown */
 .gst-dropdown {
     appearance: none;
     -webkit-appearance: none;
@@ -113,7 +101,6 @@ input[type="email"]:focus,
     outline: none;
 }
 
-/* Date Picker */
 .date-picker {
     width: 100%;
     padding: 12px;
@@ -130,77 +117,50 @@ input[type="email"]:focus,
     outline: none;
 }
 
-/* Buttons */
 button, .button {
-    background-color: #28a745; /* Green button */
+    background-color: #28a745;
     color: white;
     padding: 12px 20px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.2s ease-in-out; /* Smooth transition */
-    font-weight: 500; /* Make button text slightly bold */
-    display: inline-block; /* Make the button inline-block by default */
-    text-decoration: none; /* Remove underline for button class */
+    transition: background-color 0.2s ease-in-out;
+    font-weight: 500;
+    display: inline-block;
+    text-decoration: none;
 }
 
 button:hover, .button:hover {
-    background-color: #218838; /* Darker green on hover */
+    background-color: #218838;
 }
 
 .pdf-button {
-    background-color: #007bff; /* Blue PDF button */
-    display: block; /* Make the button full-width */
-    width: 100%; /* Increase width */
-    max-width: 300px; /* Set a maximum width */
-    margin: 20px auto; /* Center-align the button */
+    background-color: #007bff;
+    display: block;
+    width: 100%;
+    max-width: 300px;
+    margin: 20px auto;
 }
 
 .pdf-button:hover {
-    background-color: #0056b3; /* Darker blue on hover */
+    background-color: #0056b3;
 }
 
-/* ------------------------------------------------- */
-/*                 Invoice Summary                  */
-/* ------------------------------------------------- */
+.form-container {
+    width: 100%;
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 0;
+}
 
 .invoice-summary {
     margin-top: 20px;
     padding: 15px;
     background-color: #e9ecef;
     border-radius: 5px;
-    font-size: 0.9rem; /* Slightly smaller font size */
+    font-size: 0.9rem;
 }
 
-/* ------------------------------------------------- */
-/*                  Form Container                  */
-/* ------------------------------------------------- */
-
-.form-container {
-    width: 100%;
-    display: inline-block;
-    vertical-align: top;
-    margin-right: 0; /* Remove right margin */
-}
-
-/* ------------------------------------------------- */
-/*                  Media Queries                  */
-/* ------------------------------------------------- */
-
-/* Responsive design for smaller screens */
-@media (max-width: 768px) {
-    body {
-        padding: 10px; /* Reduce padding on smaller screens */
-    }
-
-    form {
-        padding: 20px;
-    }
-}
-
-/* ------------------------------------------------- */
-/*                  Invoice                     */
-/* ------------------------------------------------- */
 .invoice {
     font-family: 'Tahoma', sans-serif;
     font-size: 12px;
@@ -286,7 +246,6 @@ button:hover, .button:hover {
     text-align: right;
 }
 
-/* Item Form Fields */
 .item-form {
     display: flex;
     align-items: center;
@@ -324,7 +283,6 @@ button:hover, .button:hover {
     padding: 5px 10px;
 }
 
-/* Currency Checkbox */
 .currency-checkbox {
     display: block;
     position: relative;
@@ -381,23 +339,18 @@ button:hover, .button:hover {
     transform: rotate(45deg);
 }
 
-/* ------------------------------------------------- */
-/*                  Media Queries                  */
-/* ------------------------------------------------- */
-
-/* Responsive design for smaller screens */
 @media (max-width: 768px) {
     body {
-        padding: 10px; /* Reduce padding on smaller screens */
+        padding: 10px;
     }
 
     form {
         padding: 20px;
     }
-    /* Add these new styles to handle the invoice on smaller screens*/
+
     .invoice {
-        padding: 10px; /* Reduce padding on smaller screens */
-        border: none; /* Remove border on mobile */
+        padding: 10px;
+        border: none;
     }
     .table {
         width: 100%;
@@ -418,7 +371,6 @@ button:hover, .button:hover {
         font-size: 10px;
     }
 
-    /* Prevent word wrapping for Invoice Date and Due Date */
     .dateLabel, .dateValue {
         white-space: nowrap;
     }
