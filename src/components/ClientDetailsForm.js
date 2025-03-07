@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import '../styles.css';
+import '../styles.scss';
 import { formatABN, formatACN, formatPhoneNumber } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
 import AddressAutocomplete from './AddressAutocomplete';
@@ -99,57 +99,57 @@ const ClientDetailsForm = ({ onChange }) => {
         <div className="form-container">
             <h2>Client Details</h2>
             <form>
-                <div>
+                <div className="group">
                     <label htmlFor="clientName">Client Name</label>
-                    <input id="clientName" type="text" name="name" value={clientDetails.name} onChange={handleChange} />
+                    <input id="clientName" type="text" name="name" value={clientDetails.name} onChange={handleChange} className="form-control" />
                 </div>
-                <div>
+                <div className="group">
                     <label htmlFor="fullAddress">Address</label>
-                    <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter the client address" />
+                    <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter the client address" className="form-control" />
                 </div>
-                <button type="button" onClick={() => setShowManualFields(!showManualFields)} style={{ marginBottom: '10px' }}>
+                <button type="button" onClick={() => setShowManualFields(!showManualFields)} className="btn btn-primary mb-3">
                     {showManualFields ? 'Hide Manual Entry' : 'Enter Manually'}
                 </button>
                 {showManualFields && (
                     <>
-                        <div>
+                        <div className="group">
                             <label htmlFor="street">Street</label>
-                            <input id="street" type="text" name="street" value={clientDetails.street} onChange={handleChange} />
+                            <input id="street" type="text" name="street" value={clientDetails.street} onChange={handleChange} className="form-control" />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                            <div style={{ flex: 1, marginRight: '10px' }}>
-                                <label htmlFor="suburb" align="center">Suburb</label>
-                                <input id="suburb" type="text" name="suburb" value={clientDetails.suburb} onChange={handleChange} />
+                        <div className="row mb-3">
+                            <div className="group col-md-6">
+                                <label htmlFor="suburb">Suburb</label>
+                                <input id="suburb" type="text" name="suburb" value={clientDetails.suburb} onChange={handleChange} className="form-control" />
                             </div>
-                            <div style={{ flex: 0.5, marginRight: '10px' }}>
-                                <label htmlFor="state" align="center">State</label>
-                                <select id="state" name="state" value={clientDetails.state} onChange={handleChange} className="dropdown">
-                                    <option value="">Select State</option>
+                            <div className="group col-md-3">
+                                <label htmlFor="state">State</label>
+                                <select id="state" name="state" value={clientDetails.state} onChange={handleChange} className="form-control form-control-lg text-center">
+                                    <option value=""></option>
                                     {AUSTRALIAN_STATES.map((state) => (
                                         <option key={state} value={state}>{state}</option>
                                     ))}
                                 </select>
                             </div>
-                            <div style={{ flex: 0.5 }}>
-                                <label htmlFor="postcode" align="center">Postcode</label>
-                                <input id="postcode" type="text" name="postcode" value={clientDetails.postcode} onChange={handleChange} />
+                            <div className="group col-md-3">
+                                <label htmlFor="postcode">Postcode</label>
+                                <input id="postcode" type="text" name="postcode" value={clientDetails.postcode} onChange={handleChange} className="form-control" />
                             </div>
                         </div>
                     </>
                 )}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                    <div style={{ flex: 1, marginRight: '10px' }}>
-                        <label htmlFor="abn" align="center">ABN</label>
-                        <input id="abn" type="text" name="abn" value={clientDetails.abn} onChange={handleChange} />
+                <div className="row mb-3">
+                    <div className="group col-md-4">
+                        <label htmlFor="abn">ABN</label>
+                        <input id="abn" type="text" name="abn" value={clientDetails.abn} onChange={handleChange} className="form-control" />
                     </div>
-                    <div style={{ flex: 1 }}>
-                        <label htmlFor="acn" align="center">ACN</label>
-                        <input id="acn" type="text" name="acn" value={clientDetails.acn} onChange={handleChange} />
+                    <div className="group col-md-4">
+                        <label htmlFor="acn">ACN</label>
+                        <input id="acn" type="text" name="acn" value={clientDetails.acn} onChange={handleChange} className="form-control" />
                     </div>
-                </div>
-                <div>
-                    <label htmlFor="phone">Phone</label>
-                    <input id="phone" type="text" name="phone" value={clientDetails.phone} onChange={handleChange} />
+                    <div className="group col-md-4">
+                        <label htmlFor="phone">Phone</label>
+                        <input id="phone" type="text" name="phone" value={clientDetails.phone} onChange={handleChange} className="form-control" />
+                    </div>
                 </div>
             </form>
         </div>
