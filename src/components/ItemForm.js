@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, currency: 'AUD' }, onCurrencyRemarkChange = () => {} }) => {
+const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency: 'AUD' }, onCurrencyRemarkChange = () => {} }) => {
     const [isFirstLoad, setIsFirstLoad] = useState(true);
 
     useEffect(() => {
@@ -86,45 +86,56 @@ const InvoiceForm = ({ items, onChange, currencyRemark = { enabled: false, curre
     };
 
     return (
-        <div>
-            <h2>Items</h2>
-            <form>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '20px' }}>
-                    <label className="currency-checkbox" style={{ marginRight: '10px' }}>
-                        <input type="checkbox" name="enabled" checked={currencyRemark.enabled} onChange={handleCurrencyRemarkChange} />
-                        <span className="checkmark"></span>
-                        Add Currency
-                    </label>
-                    {currencyRemark.enabled && (
-                        <input type="text" name="currency" placeholder="Currency" value={currencyRemark.currency} onChange={handleCurrencyRemarkChange} style={{ width: '80px' }} />
-                    )}
-                </div>
-                {items.map((item, index) => (
-                    <div key={index} style={{ marginBottom: '20px', display: 'flex', alignItems: 'center' }}>
-                        <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} style={{ flex: 2, marginRight: '10px' }} />
-                        <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} style={{ flex: 0.5, marginRight: '10px' }} />
-                        <div style={{ position: 'relative', flex: 1, marginRight: '10px' }}>
-                            <span style={{ position: 'absolute', left: '10px', top: '40%', transform: 'translateY(-50%)'}}>$</span>
-                            <input type="number" name="price" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(index, e)} style={{ paddingLeft: '20px' }} />
+        <div className="w-100 d-flex justify-content-center">
+            <div style={{ width: '80%' }}>
+                <h2>Items</h2>
+                <form style={{ maxWidth: '100%', width: '100%' }}>
+                    <div className="form-row mb-3">
+                        <div className="col-auto">
+                            <label className="currency-checkbox">
+                                <input type="checkbox" name="enabled" checked={currencyRemark.enabled} onChange={handleCurrencyRemarkChange} />
+                                <span className="checkmark"></span>
+                                Add Currency
+                            </label>
                         </div>
-                        <label style={{ flex: 1, marginRight: '10px', marginBottom: '15px' }}>
-                            <select name="gst" value={item.gst} onChange={(e) => handleItemChange(index, e)} className="gst-dropdown">
-                                <option value="no">No GST</option>
-                                <option value="add">Add GST</option>
-                                <option value="inclusive">Incl. GST</option>
-                            </select>
-                        </label>
-                        {items.length > 1 && (
-                            <button type="button" onClick={() => handleRemoveItem(index)} style={{ padding: '5px 10px', marginBottom: '15px' }}>Remove</button>
+                        {currencyRemark.enabled && (
+                            <div className="col-md-1">
+                                <input type="text" name="currency" placeholder="Currency" value={currencyRemark.currency} onChange={handleCurrencyRemarkChange} className="form-control" />
+                            </div>
                         )}
                     </div>
-                ))}
-                <div style={{ marginTop: '20px' }}>
-                    <button type="button" onClick={handleAddItem}>Add Item</button>
-                </div>
-            </form>
+                    {items.map((item, index) => (
+                        <div key={index} className="row mb-3">
+                            <div className="col-md-5">
+                                <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} className="form-control" />
+                            </div>
+                            <div className="col-md-1">
+                                <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} className="form-control" />
+                            </div>
+                            <div className="col-md-2">
+                                <input type="number" name="price" placeholder="Price" value={item.price} onChange={(e) => handleItemChange(index, e)} className="form-control pl-4" />
+                            </div>
+                            <div className="col-md-2">
+                                <select name="gst" value={item.gst} onChange={(e) => handleItemChange(index, e)} className="form-control gst-dropdown form-control-lg">
+                                    <option value="no">No GST</option>
+                                    <option value="add">Add GST</option>
+                                    <option value="inclusive">Incl. GST</option>
+                                </select>
+                            </div>
+                            {items.length > 1 && (
+                                <div className="col-md-1">
+                                    <button type="button" onClick={() => handleRemoveItem(index)} className="btn btn-danger">Remove</button>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                    <div className="mt-3">
+                        <button type="button" onClick={handleAddItem} className="btn btn-primary">Add Item</button>
+                    </div>
+                </form>
+            </div>
         </div>
     );
 };
 
-export default InvoiceForm;
+export default ItemForm;
