@@ -109,7 +109,7 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
                             <div className="col-md-5">
                                 <input type="text" name="name" placeholder="Item Name" value={item.name} onChange={(e) => handleItemChange(index, e)} className="form-control" />
                             </div>
-                            <div className="col-md-1">
+                            <div className="col-md-2">
                                 <input type="number" name="quantity" placeholder="Quantity" value={item.quantity} onChange={(e) => handleItemChange(index, e)} className="form-control" />
                             </div>
                             <div className="col-md-2">
