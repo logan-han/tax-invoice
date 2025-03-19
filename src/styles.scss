@@ -1,4 +1,4 @@
-@use 'bootstrap/scss/bootstrap' as *;
+@use 'node_modules/bootstrap/scss/bootstrap' as *;
 
 body {
     font-family: 'Roboto', sans-serif;
@@ -65,20 +65,6 @@ input[name="acn"]:focus,
 input[name="bsb"]:focus,
 input[name="postcode"]:focus,
 input[type="email"]:focus,
-.dropdown:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-.dropdown {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M7 10l5 5 5-5z' fill='%234a5568'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 10px center;
-    background-size: 10px;
-}
 
 .gst-dropdown {
     appearance: none;
@@ -97,22 +83,6 @@ input[type="email"]:focus,
 }
 
 .gst-dropdown:focus {
-    border-color: #007bff;
-    outline: none;
-}
-
-.date-picker {
-    width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    background-color: #f8f9fa;
-    box-sizing: border-box;
-    transition: border-color 0.2s ease-in-out;
-}
-
-.date-picker:focus {
     border-color: #007bff;
     outline: none;
 }
@@ -179,10 +149,6 @@ button:hover, .button:hover {
     font-size: 12px;
 }
 
-.clientDetails {
-    font-size: 12px;
-}
-
 .invoiceDates {
     font-size: 12px;
 }
@@ -244,43 +210,6 @@ button:hover, .button:hover {
 
 .footerDetailsValue {
     text-align: right;
-}
-
-.item-form {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-}
-
-.item-form input[type="text"],
-.item-form input[type="number"],
-.item-form select {
-    margin-right: 10px;
-}
-
-.item-form .price-field {
-    position: relative;
-    flex: 1.5;
-    margin-right: 10px;
-}
-
-.item-form .price-field span {
-    position: absolute;
-    left: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-}
-
-.item-form .price-field input {
-    padding-left: 20px;
-}
-
-.item-form .quantity-field {
-    flex: 0.5;
-}
-
-.item-form .remove-button {
-    padding: 5px 10px;
 }
 
 .currency-checkbox {
