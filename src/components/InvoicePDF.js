@@ -147,22 +147,22 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                     {gst > 0 ? (
                                         <Fragment>
                                             <tr>
-                                                <td align="right" className="tableCell">Subtotal</td>
-                                                <td align="right" className="tableCell">{formatCurrency(total)}</td>
+                                                <td align="right" className="tableCell" width="85%">Subtotal</td>
+                                                <td align="right" className="tableCell" width="15%">{formatCurrency(total)}</td>
                                             </tr>
                                             <tr>
-                                                <td align="right" className="tableCell">TOTAL GST(10%)</td>
-                                                <td align="right" className="tableCell">{formatCurrency(gst)}</td>
+                                                <td align="right" className="tableCell" width="85%">TOTAL GST(10%)</td>
+                                                <td align="right" className="tableCell" width="15%">{formatCurrency(gst)}</td>
                                             </tr>
                                             <tr>
-                                                <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
-                                                <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
+                                                <td align="right" className="tableCell" width="85%"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                                <td align="right" className="tableCell" width="15%"><b>{formatCurrency(grandTotal)}</b></td>
                                             </tr>
                                         </Fragment>
                                     ) : (
                                         <tr>
-                                            <td align="right" className="tableCell"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
-                                            <td align="right" className="tableCell"><b>{formatCurrency(grandTotal)}</b></td>
+                                            <td align="right" className="tableCell" width="85%"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                            <td align="right" className="tableCell" width="15%"><b>{formatCurrency(grandTotal)}</b></td>
                                         </tr>
                                     )}
                                 </tbody>
