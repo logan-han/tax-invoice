@@ -9,8 +9,7 @@ function App() {
     const [businessDetails, setBusinessDetails] = useState({});
     const [clientDetails, setClientDetails] = useState({});
     const [items, setItems] = useState([]);
-    const [invoiceDetails, setInvoiceDetails] = useState({ invoiceDate: '', invoiceNumber: '', dueDate: '' });
-    const [currencyRemark, setCurrencyRemark] = useState({ enabled: false, currency: 'AUD' });
+    const [invoiceDetails, setInvoiceDetails] = useState({ invoiceDate: '', invoiceNumber: '', dueDate: '', currency: '' });
 
     useEffect(() => {
         const queryParams = new URLSearchParams(window.location.search);
@@ -40,10 +39,6 @@ function App() {
     const handleInvoiceDetailsChange = (details) => {
         setInvoiceDetails(details);
         updateUrl(businessDetails, clientDetails, items, details);
-    };
-
-    const handleCurrencyRemarkChange = (newCurrencyRemark) => {
-        setCurrencyRemark(newCurrencyRemark);
     };
 
     const updateUrl = (business, client, items, invoice) => {
@@ -99,8 +94,6 @@ function App() {
                             <ItemForm 
                                 items={items} 
                                 onChange={handleItemsChange} 
-                                currencyRemark={currencyRemark} 
-                                onCurrencyRemarkChange={handleCurrencyRemarkChange} 
                             />
                         </div>
                     </div>
@@ -120,7 +113,7 @@ function App() {
                                 dueDate={invoiceDetails.dueDate}
                                 bsb={businessDetails.bsb}
                                 accountNumber={businessDetails.accountNumber}
-                                currencyRemark={currencyRemark}
+                                currency={invoiceDetails.currency}
                             />
                         </div>
                     </div>

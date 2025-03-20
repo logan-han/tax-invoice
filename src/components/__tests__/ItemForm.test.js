@@ -87,20 +87,6 @@ test('handles item GST change', () => {
   expect(handleChange).toHaveBeenCalledWith([{ name: 'Item 1', quantity: 1, price: 10, gst: 'add' }]);
 });
 
-test('handles currency remark changes', () => {
-  const items = [];
-  const handleChange = jest.fn();
-  const handleCurrencyRemarkChange = jest.fn();
-
-  const { getByText, getByPlaceholderText } = render(
-    <InvoiceForm items={items} onChange={handleChange} currencyRemark={{ enabled: false, currency: 'AUD' }} onCurrencyRemarkChange={handleCurrencyRemarkChange} />
-  );
-
-  fireEvent.click(getByText('Add Currency'));
-
-  expect(handleCurrencyRemarkChange).toHaveBeenCalledWith({ enabled: true, currency: 'AUD' });
-});
-
 test('handles multiple items changes', () => {
   const items = [
     { name: 'Item 1', quantity: 1, price: 10, gst: 'no' },

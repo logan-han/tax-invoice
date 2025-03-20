@@ -13,6 +13,7 @@ test('renders InvoiceDetailsForm component and updates details', () => {
 
   fireEvent.change(getByLabelText('Invoice Date'), { target: { value: '02-02-2023' } });
   fireEvent.change(getByLabelText('Invoice Number'), { target: { value: '20230202-0002' } });
+  fireEvent.change(getByLabelText('Currency'), { target: { value: 'USD' } });
 
   expect(handleChange).toHaveBeenCalled();
 });

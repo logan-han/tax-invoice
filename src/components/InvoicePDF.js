@@ -3,7 +3,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import '../styles.scss';
 
-const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoiceNumber, dueDate, currencyRemark = { enabled: false, currency: 'AUD' } }) => {
+const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoiceNumber, dueDate, currency = '' }) => {
     const [total, setTotal] = useState(0);
     const [gst, setGst] = useState(0);
     const [grandTotal, setGrandTotal] = useState(0);
@@ -128,7 +128,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                             <strong>GST</strong>
                                         </td>
                                         <td width="15%" bordercolor="#ccc" bgcolor="#f2f2f2" className="tableHeader" style={{ textAlign: 'center' }}>
-                                            <strong>Amount {currencyRemark.enabled && currencyRemark.currency}</strong>
+                                            <strong>Amount {currency && currency}</strong>
                                         </td>
                                     </tr>
                                     {items.map((item, index) => (
@@ -155,13 +155,13 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                                                 <td align="right" className="tableCell" width="15%">{formatCurrency(gst)}</td>
                                             </tr>
                                             <tr>
-                                                <td align="right" className="tableCell" width="85%"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                                <td align="right" className="tableCell" width="85%"><b>Total {currency && currency}</b></td>
                                                 <td align="right" className="tableCell" width="15%"><b>{formatCurrency(grandTotal)}</b></td>
                                             </tr>
                                         </Fragment>
                                     ) : (
                                         <tr>
-                                            <td align="right" className="tableCell" width="85%"><b>Total {currencyRemark.enabled && currencyRemark.currency}</b></td>
+                                            <td align="right" className="tableCell" width="85%"><b>Total {currency && currency}</b></td>
                                             <td align="right" className="tableCell" width="15%"><b>{formatCurrency(grandTotal)}</b></td>
                                         </tr>
                                     )}
