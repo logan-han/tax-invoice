@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency: 'AUD' }, onCurrencyRemarkChange = () => {} }) => {
+const ItemForm = ({ items, onChange }) => {
     const [isFirstLoad, setIsFirstLoad] = useState(true);
 
     useEffect(() => {
@@ -17,17 +17,12 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
                     gst: queryParams.get(`itemGst_${i}`) || 'no'
                 });
             }
-            const storedCurrencyRemark = {
-                enabled: queryParams.get(`currencyRemarkEnabled`) === 'true',
-                currency: queryParams.get(`currencyRemarkCurrency`) || 'AUD'
-            };
             if (storedItems.length > 0) {
                 onChange(storedItems);
             }
-            onCurrencyRemarkChange(storedCurrencyRemark);
             setIsFirstLoad(false);
         }
-    }, [onChange, onCurrencyRemarkChange, isFirstLoad]);
+    }, [onChange, isFirstLoad]);
 
     useEffect(() => {
         if (!isFirstLoad && items.length === 0) {
@@ -35,10 +30,6 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
         }
         updateURL(items);
     }, [items, onChange, isFirstLoad]);
-
-    useEffect(() => {
-        updateURL(items);
-    },[currencyRemark])
 
     const handleItemChange = (index, event) => {
         const newItems = [...items];
@@ -60,11 +51,6 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
         updateURL(newItems);
     };
 
-    const handleCurrencyRemarkChange = (event) => {
-        const { name, value, type, checked } = event.target;
-        onCurrencyRemarkChange({ ...currencyRemark, [name]: type === 'checkbox' ? checked : value });
-    };
-
     const updateURL = (items) => {
         const url = new URL(window.location.href);
         for (let i = 0; i < 10; i++) {
@@ -79,9 +65,6 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
             url.searchParams.set(`itemPrice_${index}`, item.price);
             url.searchParams.set(`itemGst_${index}`, item.gst);
         });
-        url.searchParams.set(`currencyRemarkEnabled`, currencyRemark.enabled);
-        url.searchParams.set(`currencyRemarkCurrency`, currencyRemark.currency);
-
         window.history.replaceState({}, '', url);
     };
 
@@ -90,20 +73,6 @@ const ItemForm = ({ items, onChange, currencyRemark = { enabled: false, currency
             <div style={{ width: '80%' }}>
                 <h2>Items</h2>
                 <form style={{ maxWidth: '100%', width: '100%' }}>
-                    <div className="form-row mb-3">
-                        <div className="col-auto">
-                            <label className="currency-checkbox">
-                                <input type="checkbox" name="enabled" checked={currencyRemark.enabled} onChange={handleCurrencyRemarkChange} />
-                                <span className="checkmark"></span>
-                                Add Currency
-                            </label>
-                        </div>
-                        {currencyRemark.enabled && (
-                            <div className="col-md-1">
-                                <input type="text" name="currency" placeholder="Currency" value={currencyRemark.currency} onChange={handleCurrencyRemarkChange} className="form-control" />
-                            </div>
-                        )}
-                    </div>
                     {items.map((item, index) => (
                         <div key={index} className="row mb-3">
                             <div className="col-md-5">
