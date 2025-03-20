@@ -73,13 +73,6 @@ function App() {
                         <div className="card-body">
                             <ClientDetailsForm onChange={handleClientDetailsChange} />
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="row mb-4">
-                <div className="col-md-12">
-                    <div className="card shadow-sm">
                         <div className="card-body">
                             <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
                         </div>
