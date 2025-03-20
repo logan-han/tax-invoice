@@ -43,19 +43,21 @@ const InvoiceDetailsForm = ({ onChange }) => {
             <h2>Invoice Details</h2>
             <form style={{ maxWidth: '80%', width: '80%' }}>
                 <div className="row">
-                    <div className="group col-md-3">
+                    <div className="group col-md-5">
                         <label htmlFor="invoiceDate">Invoice Date</label>
                         <input id="invoiceDate" type="date" value={invoiceDate} onChange={handleDateChange} className="form-control form-control-lg" />
                     </div>
-                    <div className="group col-md-3">
+                    <div className="group col-md-5">
                         <label htmlFor="dueDate">Due Date</label>
                         <input id="dueDate" type="date" value={dueDate} onChange={handleDueDateChange} className="form-control form-control-lg" />
                     </div>
-                    <div className="group col-md-3">
+                </div>
+                <div className="row">                    
+                    <div className="group col-md-5">
                         <label htmlFor="invoiceNumber">Invoice Number</label>
                         <input id="invoiceNumber" type="text" value={invoiceNumber} onChange={handleNumberChange} className="form-control" />
                     </div>
-                    <div className="group col-md-2">
+                    <div className="group col-md-5">
                         <label htmlFor="currency">Currency</label>
                         <select id="currency" value={currency} onChange={handleCurrencyChange} className="form-control form-control-lg">
                             <option value="">N/A</option>
