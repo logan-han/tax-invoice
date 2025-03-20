@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles.scss';
-import { formatABN, formatACN, formatPhoneNumber } from '../utils/formatters';
+import { formatABN, formatACN } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
 import AddressAutocomplete from './AddressAutocomplete';
 
@@ -12,8 +12,7 @@ const ClientDetailsForm = ({ onChange }) => {
         state: '',
         postcode: '',
         abn: '',
-        acn: '',
-        phone: ''
+        acn: ''
     });
 
     const [showManualFields, setShowManualFields] = useState(false);
@@ -27,8 +26,7 @@ const ClientDetailsForm = ({ onChange }) => {
             state:  queryParams.get('clientState') || '',
             postcode: queryParams.get('clientPostcode') || '',
             abn: queryParams.get('clientAbn') || '',
-            acn: queryParams.get('clientAcn') || '',
-            phone: queryParams.get('clientPhone') || ''
+            acn: queryParams.get('clientAcn') || ''
         };
         setClientDetails(details);
     }, []);
@@ -68,8 +66,6 @@ const ClientDetailsForm = ({ onChange }) => {
             formattedValue = formatACN(value).slice(0, 11);
         } else if (name === 'postcode') {
             formattedValue = value.replace(/\D/g, '').slice(0, 4);
-        } else if (name === 'phone') {
-            formattedValue = formatPhoneNumber(value);
         }
         setClientDetails((prevDetails) => ({
             ...prevDetails,
@@ -91,7 +87,6 @@ const ClientDetailsForm = ({ onChange }) => {
         url.searchParams.set('clientPostcode', details.postcode);
         url.searchParams.set('clientAbn', details.abn);
         url.searchParams.set('clientAcn', details.acn);
-        url.searchParams.set('clientPhone', details.phone);
         window.history.replaceState({}, '', url);
     };
 
@@ -138,17 +133,13 @@ const ClientDetailsForm = ({ onChange }) => {
                     </>
                 )}
                 <div className="row mb-3">
-                    <div className="group col-md-4">
+                    <div className="group col-md-6">
                         <label htmlFor="abn">ABN</label>
                         <input id="abn" type="text" name="abn" value={clientDetails.abn} onChange={handleChange} className="form-control" />
                     </div>
-                    <div className="group col-md-4">
+                    <div className="group col-md-6">
                         <label htmlFor="acn">ACN</label>
                         <input id="acn" type="text" name="acn" value={clientDetails.acn} onChange={handleChange} className="form-control" />
-                    </div>
-                    <div className="group col-md-4">
-                        <label htmlFor="phone">Phone</label>
-                        <input id="phone" type="text" name="phone" value={clientDetails.phone} onChange={handleChange} className="form-control" />
                     </div>
                 </div>
             </form>
