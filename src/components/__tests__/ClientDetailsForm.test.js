@@ -2,8 +2,6 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ClientDetailsForm from '../ClientDetailsForm';
 
-jest.mock('../../styles.css', () => ({}));
-
 jest.mock('../AddressAutocomplete', () => ({ onPlaceSelected, id }) => (
     <input
         data-testid="autocomplete"

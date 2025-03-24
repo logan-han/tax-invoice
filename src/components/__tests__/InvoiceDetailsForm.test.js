@@ -2,8 +2,6 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react';
 import InvoiceDetailsForm from '../InvoiceDetailsForm';
 
-jest.mock('../../styles.css', () => ({}));
-
 test('renders InvoiceDetailsForm component and updates details', () => {
   const handleChange = jest.fn();
 

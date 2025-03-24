@@ -2,8 +2,6 @@ import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react';
 import InvoiceForm from '../ItemForm';
 
-jest.mock('../../styles.css', () => ({}));
-
 test('renders InvoiceForm component and adds an item', () => {
   const items = [];
   const handleChange = jest.fn();
