@@ -2,8 +2,6 @@ import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react';
 import InvoicePDF from '../InvoicePDF';
 
-jest.mock('../../styles.css', () => ({}));
-
 jest.mock('jspdf', () => {
   const saveMock = jest.fn();
   return jest.fn().mockImplementation(() => ({
