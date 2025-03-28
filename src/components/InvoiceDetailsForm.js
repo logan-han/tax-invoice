@@ -23,7 +23,13 @@ const InvoiceDetailsForm = ({ onChange }) => {
     }, [invoiceDate, invoiceNumber, dueDate, currency]);
 
     const handleDateChange = (e) => {
-        setInvoiceDate(e.target.value);
+        const newInvoiceDate = e.target.value;
+        setInvoiceDate(newInvoiceDate);
+        
+        const newDueDate = new Date(newInvoiceDate);
+        newDueDate.setDate(newDueDate.getDate() + 30);
+        const newDueDateString = newDueDate.toISOString().split('T')[0];
+        setDueDate(newDueDateString);
     };
 
     const handleNumberChange = (e) => {
