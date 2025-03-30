@@ -76,7 +76,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                 }
             }
 
-          pdf.save(`invoice_${formatDate(invoiceDate).replace(/-/g, '')}-${invoiceNumber}.pdf`);
+          pdf.save(`invoice-${invoiceNumber}.pdf`);
         });
     };
 
