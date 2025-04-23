@@ -16,30 +16,32 @@ const mockAutocomplete = jest.fn(() => ({
     getPlace: mockGetPlace
 }));
 
-jest.mock('@react-google-maps/api', () => ({
-    Autocomplete: ({ onLoad, onPlaceChanged, children }) => {
-        // Simulate onLoad callback
-        React.useEffect(() => {
+jest.mock('@react-google-maps/api', () => {
+    const React = require('react');
+    const MockAutocompleteComponent = ({ onLoad, onPlaceChanged, children }) => {
+        React.useLayoutEffect(() => {
             const instance = mockAutocomplete();
             if (onLoad) {
                 onLoad(instance);
             }
-        }, [onLoad]);
+        }, []);
 
-        // Simulate onPlaceChanged by adding a data-testid to trigger it
         return React.cloneElement(children, {
             'data-testid': 'autocomplete-input',
             onChange: (e) => {
-                 // Allow parent components to trigger place change for testing
-                 if (e.target.value === 'trigger place changed') {
-                     if(onPlaceChanged) onPlaceChanged();
-                 }
-                 if(children.props.onChange) children.props.onChange(e);
+                if (e.target.value === 'trigger place changed') {
+                    if (onPlaceChanged) onPlaceChanged();
+                }
+                if (children.props.onChange) children.props.onChange(e);
             }
         });
-    },
-    LoadScript: ({ children }) => <div>{children}</div> // Mock LoadScript
-}));
+    };
+
+    return {
+        Autocomplete: MockAutocompleteComponent,
+        LoadScript: ({ children }) => React.createElement('div', null, children)
+    };
+});
 
 describe('AddressAutocomplete', () => {
     it('renders the input field', () => {
@@ -51,9 +53,8 @@ describe('AddressAutocomplete', () => {
     it('calls onPlaceSelected with the correct address components', () => {
         const handlePlaceSelected = jest.fn();
         render(<AddressAutocomplete onPlaceSelected={handlePlaceSelected} placeholder="Enter your address" />);
-        const input = screen.getByTestId('autocomplete-input'); // Use the test id added in the mock
+        const input = screen.getByTestId('autocomplete-input');
 
-        // Simulate place selection by changing input value to trigger mock's onPlaceChanged
         fireEvent.change(input, { target: { value: 'trigger place changed' } });
 
         expect(mockGetPlace).toHaveBeenCalled();

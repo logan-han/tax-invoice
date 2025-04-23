@@ -58,6 +58,7 @@ function App() {
         <LoadScript
             googleMapsApiKey={googleMapsApiKey}
             libraries={libraries}
+            loading="async"
         >
             <div className="App container my-4">
                 <header className="mb-5 text-center">
