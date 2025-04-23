@@ -2,47 +2,31 @@ import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import BusinessDetailsForm from '../BusinessDetailsForm';
 
-jest.mock('../AddressAutocomplete', () => ({ onPlaceSelected, id }) => (
-    <input
-        data-testid="autocomplete"
-        id={id}
-        onChange={() => onPlaceSelected({
-            address_components: [
-                { long_name: '123', types: ['street_number'] },
-                { long_name: 'Main St', types: ['route'] },
-                { long_name: 'Sydney', types: ['locality'] },
-                { short_name: 'NSW', types: ['administrative_area_level_1'] },
-                { long_name: '2000', types: ['postal_code'] }
-            ]
-        })}
-    />
-));
-
-beforeAll(() => {
-    global.google = {
-        maps: {
-            places: {
-                Autocomplete: jest.fn().mockImplementation(() => {
-                    return {
-                        addListener: jest.fn((event, callback) => {
-                            if (event === 'place_changed') {
-                                callback();
-                            }
-                        }),
-                        getPlace: jest.fn(() => ({
-                            address_components: [
-                                { long_name: '123', types: ['street_number'] },
-                                { long_name: 'Main St', types: ['route'] },
-                                { long_name: 'Sydney', types: ['locality'] },
-                                { short_name: 'NSW', types: ['administrative_area_level_1'] },
-                                { long_name: '2000', types: ['postal_code'] }
-                            ]
-                        }))
-                    };
-                })
-            }
+// Keep the mock simple for form tests, focus on interaction
+jest.mock('../AddressAutocomplete', () => ({ onPlaceSelected, id, placeholder, className }) => {
+    const handleChange = (event) => {
+        // Simulate a place selection when a specific value is entered
+        if (event.target.value === '123 Main St, Sydney NSW 2000') {
+            onPlaceSelected({
+                address_components: [
+                    { long_name: '123', types: ['street_number'] },
+                    { long_name: 'Main St', types: ['route'] },
+                    { long_name: 'Sydney', types: ['locality'] },
+                    { short_name: 'NSW', types: ['administrative_area_level_1'] },
+                    { long_name: '2000', types: ['postal_code'] }
+                ]
+            });
         }
     };
+    return (
+        <input
+            data-testid={`autocomplete-${id}`} // Use id for unique test id
+            id={id}
+            placeholder={placeholder}
+            className={className}
+            onChange={handleChange}
+        />
+    );
 });
 
 describe('BusinessDetailsForm', () => {
@@ -56,12 +40,15 @@ describe('BusinessDetailsForm', () => {
 
     it('updates address fields when a place is selected', () => {
         render(<BusinessDetailsForm onChange={jest.fn()} />);
-        const autocompleteInput = screen.getByTestId('autocomplete');
-        fireEvent.change(autocompleteInput, { target: { value: '123 Main St' } });
-        fireEvent.blur(autocompleteInput);
+        const autocompleteInput = screen.getByTestId('autocomplete-fullAddress'); // Use the specific id
 
+        // Simulate typing the address that triggers the mock's onPlaceSelected
+        fireEvent.change(autocompleteInput, { target: { value: '123 Main St, Sydney NSW 2000' } });
+
+        // Click manual entry button to reveal fields (if needed by your logic)
         fireEvent.click(screen.getByText('Enter Manually'));
 
+        // Check if fields are populated (ensure manual fields are visible)
         expect(screen.getByLabelText('Street').value).toBe('123 Main St');
         expect(screen.getByLabelText('Suburb').value).toBe('Sydney');
         expect(screen.getByLabelText('State').value).toBe('NSW');

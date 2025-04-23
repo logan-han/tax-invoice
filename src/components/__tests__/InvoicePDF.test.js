@@ -30,7 +30,7 @@ test('renders InvoicePDF component', () => {
   const clientDetails = { name: 'Client Name' };
   const items = [{ name: 'Item 1', quantity: 1, price: 100, gst: true }];
   const invoiceDate = '01-01-2025';
-  const invoiceNumber = '0001';
+  const invoiceNumber = '20250101-0001';
 
   const { getByText } = render(
     <InvoicePDF
@@ -45,7 +45,7 @@ test('renders InvoicePDF component', () => {
   expect(getByText('Business Name')).toBeInTheDocument();
   expect(getByText('Client Name')).toBeInTheDocument();
   expect(getByText('Item 1')).toBeInTheDocument();
-  expect(getByText('Tax Invoice # 0001')).toBeInTheDocument();
+  expect(getByText('Tax Invoice # 20250101-0001')).toBeInTheDocument();
 });
 
 test('generates PDF', async () => {
@@ -53,7 +53,7 @@ test('generates PDF', async () => {
   const clientDetails = { name: 'Client Name' };
   const items = [{ name: 'Item 1', quantity: 1, price: 100, gst: true }];
   const invoiceDate = '01-01-2025';
-  const invoiceNumber = '0001';
+  const invoiceNumber = '20250101-0001';
 
   const { getByText } = render(
     <InvoicePDF
@@ -70,7 +70,7 @@ test('generates PDF', async () => {
   await waitFor(() => {
     const jsPDFMock = require('jspdf');
     expect(jsPDFMock).toHaveBeenCalled();
-    expect(jsPDFMock().save).toHaveBeenCalledWith(`invoice_01012025-0001.pdf`);
+    expect(jsPDFMock().save).toHaveBeenCalledWith(`invoice-20250101-0001.pdf`);
   });
 });
 

@@ -48,9 +48,13 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
         const input = document.getElementById('invoice');
 
         html2canvas(input, {
-          scale: 1
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          letterRendering: true,
+          allowTaint: true
         }).then((canvas) => {
-          const imgData = canvas.toDataURL('image/jpeg', 0.98);
+          const imgData = canvas.toDataURL('image/jpeg', 0.92);
           const pdf = new jsPDF('p', 'mm', 'a4');
           const imgProps = pdf.getImageProperties(imgData);
           const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -76,7 +80,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
                 }
             }
 
-          pdf.save(`invoice_${formatDate(invoiceDate).replace(/-/g, '')}-${invoiceNumber}.pdf`);
+          pdf.save(`invoice-${invoiceNumber}.pdf`);
         });
     };
 

@@ -1,9 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { LoadScript } from '@react-google-maps/api';
 import BusinessDetailsForm from './components/BusinessDetailsForm';
 import ClientDetailsForm from './components/ClientDetailsForm';
 import ItemForm from './components/ItemForm';
 import InvoicePDF from './components/InvoicePDF';
 import InvoiceDetailsForm from './components/InvoiceDetailsForm';
+
+const googleMapsApiKey = "AIzaSyBN-y5TW0Yz1qMBj7i4GA6KD2ToAp4us4o";
+const libraries = ["places"];
 
 function App() {
     const [businessDetails, setBusinessDetails] = useState({});
@@ -51,69 +55,74 @@ function App() {
     };
 
     return (
-        <div className="App container my-4">
-            <header className="mb-5 text-center">
-                <h1 className="display-4 text-primary font-weight-bold">
-                    <i className="fas fa-file-invoice-dollar mr-2"></i>
-                    Australian Tax Invoice Generator
-                </h1>
-                <p className="lead text-muted">Create professional tax invoices in minutes</p>
-            </header>
-            
-            <div className="row">
-                <div className="col-md-6 mb-4">
-                    <div className="card shadow-sm h-100">
-                        <div className="card-body">
-                            <BusinessDetailsForm onChange={handleBusinessDetailsChange} />
+        <LoadScript
+            googleMapsApiKey={googleMapsApiKey}
+            libraries={libraries}
+        >
+            <div className="App container my-4">
+                <header className="mb-5 text-center">
+                    <h1 className="display-4 text-primary font-weight-bold">
+                        <i className="fas fa-file-invoice-dollar mr-2"></i>
+                        Australian Tax Invoice Generator
+                    </h1>
+                    <p className="lead text-muted">Create professional tax invoices in minutes</p>
+                </header>
+                
+                <div className="row">
+                    <div className="col-md-6 mb-4">
+                        <div className="card shadow-sm h-100">
+                            <div className="card-body">
+                                <BusinessDetailsForm onChange={handleBusinessDetailsChange} />
+                            </div>
+                        </div>
+                    </div>
+                    <div className="col-md-6 mb-4">
+                        <div className="card shadow-sm h-100">
+                            <div className="card-body">
+                                <ClientDetailsForm onChange={handleClientDetailsChange} />
+                            </div>
+                            <div className="card-body">
+                                <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div className="col-md-6 mb-4">
-                    <div className="card shadow-sm h-100">
-                        <div className="card-body">
-                            <ClientDetailsForm onChange={handleClientDetailsChange} />
-                        </div>
-                        <div className="card-body">
-                            <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
+                
+                <div className="row mb-4">
+                    <div className="col-md-12">
+                        <div className="card shadow-sm">
+                            <div className="card-body">
+                                <ItemForm 
+                                    items={items} 
+                                    onChange={handleItemsChange} 
+                                />
+                            </div>
                         </div>
                     </div>
                 </div>
+                
+                <div className="row mb-4">
+                    <div className="col-md-12">
+                        <div className="card shadow">
+                            <div className="card-body">
+                                <InvoicePDF
+                                    businessDetails={businessDetails}
+                                    clientDetails={clientDetails}
+                                    items={items}
+                                    invoiceDate={invoiceDetails.invoiceDate}
+                                    invoiceNumber={invoiceDetails.invoiceNumber}
+                                    dueDate={invoiceDetails.dueDate}
+                                    bsb={businessDetails.bsb}
+                                    accountNumber={businessDetails.accountNumber}
+                                    currency={invoiceDetails.currency}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
             </div>
-            
-            <div className="row mb-4">
-                <div className="col-md-12">
-                    <div className="card shadow-sm">
-                        <div className="card-body">
-                            <ItemForm 
-                                items={items} 
-                                onChange={handleItemsChange} 
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div className="row mb-4">
-                <div className="col-md-12">
-                    <div className="card shadow">
-                        <div className="card-body">
-                            <InvoicePDF
-                                businessDetails={businessDetails}
-                                clientDetails={clientDetails}
-                                items={items}
-                                invoiceDate={invoiceDetails.invoiceDate}
-                                invoiceNumber={invoiceDetails.invoiceNumber}
-                                dueDate={invoiceDetails.dueDate}
-                                bsb={businessDetails.bsb}
-                                accountNumber={businessDetails.accountNumber}
-                                currency={invoiceDetails.currency}
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-        </div>
+        </LoadScript>
     );
 }
 

@@ -31,3 +31,18 @@ test('due date updates automatically when invoice date changes', () => {
   const dueDate = getByLabelText('Due Date').value;
   expect(dueDate).toBe('2023-03-04');
 });
+
+test('invoice number updates automatically when invoice date changes', () => {
+  const handleChange = jest.fn();
+  
+  const { getByLabelText } = render(
+    <InvoiceDetailsForm onChange={handleChange} />
+  );
+
+  // Change the invoice date
+  fireEvent.change(getByLabelText('Invoice Date'), { target: { value: '2023-02-02' } });
+  
+  // Check that the invoice number has been updated according to the new date
+  const invoiceNumber = getByLabelText('Invoice Number').value;
+  expect(invoiceNumber).toBe('20230202-0001');
+});
