@@ -26,6 +26,8 @@ const InvoiceDetailsForm = ({ onChange }) => {
         const newInvoiceDate = e.target.value;
         setInvoiceDate(newInvoiceDate);
         
+        setInvoiceNumber(`${newInvoiceDate.replace(/-/g, '')}-0001`);
+        
         const newDueDate = new Date(newInvoiceDate);
         newDueDate.setDate(newDueDate.getDate() + 30);
         const newDueDateString = newDueDate.toISOString().split('T')[0];

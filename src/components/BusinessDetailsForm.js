@@ -42,6 +42,10 @@ const BusinessDetailsForm = ({ onChange }) => {
     }, []);
 
     const handlePlaceSelected = (place) => {
+        if (!place || !place.address_components) {
+            console.error("Place or address components not found:", place);
+            return; // Exit if place or address_components are undefined
+        }
         const addressComponents = place.address_components.reduce((acc, component) => {
             const types = component.types;
             if (types.includes('street_number')) {
@@ -119,7 +123,12 @@ const BusinessDetailsForm = ({ onChange }) => {
                 </div>
                 <div className="group">
                     <label htmlFor="fullAddress">Address</label>
-                    <AddressAutocomplete id="fullAddress" onPlaceSelected={handlePlaceSelected} placeholder="Enter your business address" className="form-control" />
+                    <AddressAutocomplete
+                        id="fullAddress"
+                        onPlaceSelected={handlePlaceSelected}
+                        placeholder="Enter your business address"
+                        className="form-control"
+                    />
                 </div>
                 <button type="button" onClick={() => setShowManualFields(!showManualFields)} className="btn btn-primary mb-3">
                     {showManualFields ? 'Hide Manual Entry' : 'Enter Manually'}
