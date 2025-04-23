@@ -8,7 +8,7 @@ While it's completely stateless, it updates the browser address bar to enable pr
 
 ## Config
 
-If you were to deploy your own version of this, update Google Maps API key in index.html
+If you were to deploy your own version of this, update Google Maps API key in App.js
 
 ## Try
 
