@@ -87,7 +87,7 @@ const InvoicePDF = ({ businessDetails, clientDetails, items, invoiceDate, invoic
     return (
         <div>
             <h2>Preview</h2>
-            <div id="invoice" className="invoice" style={{ width: '210mm', margin: '0 auto' }}>
+            <div id="invoice" className="invoice" style={{ width: '210mm', margin: '0 auto', border: 'none' }}>
                 <table align="center" border="0" cellPadding="0" cellSpacing="0" className="table">
                     <tbody><tr>
                         <td valign="top" style={{ width: '100%' }}>
