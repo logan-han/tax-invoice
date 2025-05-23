@@ -13,7 +13,3 @@ If you were to deploy your own version of this, update Google Maps API key in Ap
 ## Try
 
 https://invoice.han.life
-
-## License
-
-Favicon licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
