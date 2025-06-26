@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import '../styles.scss';
 import { formatABN, formatACN } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
-import AddressAutocomplete from './AddressAutocomplete';
+import PlaceAutocompleteElement from './PlaceAutocompleteElement';
 
 const ClientDetailsForm = ({ onChange }) => {
     const [clientDetails, setClientDetails] = useState({
@@ -104,7 +104,7 @@ const ClientDetailsForm = ({ onChange }) => {
                 </div>
                 <div className="group">
                     <label htmlFor="clientFullAddress">Address</label> {/* Changed id to avoid conflict */}
-                    <AddressAutocomplete
+                    <PlaceAutocompleteElement
                         id="clientFullAddress" // Changed id to avoid conflict
                         onPlaceSelected={handlePlaceSelected}
                         placeholder="Enter the client address"

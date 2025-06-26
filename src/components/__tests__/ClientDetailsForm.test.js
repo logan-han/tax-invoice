@@ -3,7 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import ClientDetailsForm from '../ClientDetailsForm';
 
 // Keep the mock simple for form tests, focus on interaction
-jest.mock('../AddressAutocomplete', () => ({ onPlaceSelected, id, placeholder, className }) => {
+jest.mock('../PlaceAutocompleteElement', () => ({ onPlaceSelected, id, placeholder, className }) => {
     const handleChange = (event) => {
         // Simulate a place selection when a specific value is entered
         if (event.target.value === '456 High St, Melbourne VIC 3000') {
