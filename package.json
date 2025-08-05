@@ -27,8 +27,8 @@
     "@babel/preset-react": "^7.27.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^12.1.5",
-    "@types/jest": "^27.5.2",
-    "jest": "^27.5.1",
+    "@types/jest": "^30.0.0",
+    "jest": "^30.0.5",
     "typescript": "^5.8.2"
   },
   "browserslist": {
