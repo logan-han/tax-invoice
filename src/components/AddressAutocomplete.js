@@ -82,8 +82,25 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
                 gmp-place-autocomplete {
                     display: block !important;
                     width: 100% !important;
+                    border: 1px solid #ced4da !important;
+                    border-radius: 4px !important;
+                    outline: none !important;
+                    background: #f8f9fa !important;
+                    background-color: #f8f9fa !important;
+                    color-scheme: light !important;
+                    --gmp-mat-background: #f8f9fa !important;
+                    --gmp-mat-color: #212529 !important;
                 }
-                gmp-place-autocomplete::part(input) {
+                gmp-place-autocomplete:focus-within {
+                    border-color: #86b7fe !important;
+                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+                }
+                gmp-place-autocomplete * {
+                    background: transparent !important;
+                    background-color: transparent !important;
+                }
+                gmp-place-autocomplete::part(input),
+                gmp-place-autocomplete::part(text-input) {
                     display: block !important;
                     width: 100% !important;
                     padding: 0.375rem 0.75rem !important;
@@ -91,20 +108,21 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
                     font-weight: 400 !important;
                     line-height: 1.5 !important;
                     color: #212529 !important;
-                    background-color: #fff !important;
-                    background: #fff !important;
-                    background-clip: padding-box !important;
-                    border: 1px solid #ced4da !important;
-                    border-radius: 0.25rem !important;
-                    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out !important;
+                    background-color: transparent !important;
+                    background: transparent !important;
+                    border: none !important;
+                    outline: none !important;
                 }
-                gmp-place-autocomplete::part(input):focus {
-                    color: #212529 !important;
-                    background-color: #fff !important;
-                    background: #fff !important;
-                    border-color: #86b7fe !important;
-                    outline: 0 !important;
-                    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+                gmp-place-autocomplete::part(input):focus,
+                gmp-place-autocomplete::part(text-input):focus {
+                    outline: none !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                }
+                gmp-place-autocomplete::part(container),
+                gmp-place-autocomplete::part(search-icon) {
+                    background: transparent !important;
+                    background-color: transparent !important;
                 }
             `;
             if (!document.querySelector('style[data-gmp-autocomplete]')) {
