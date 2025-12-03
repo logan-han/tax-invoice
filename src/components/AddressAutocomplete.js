@@ -77,6 +77,7 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
             autocompleteRef.current = placeAutocomplete;
 
             // Apply styles to match the existing form control appearance
+            // Force light mode to prevent system dark mode from affecting the component
             const style = document.createElement('style');
             style.textContent = `
                 gmp-place-autocomplete {
@@ -87,7 +88,7 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
                     outline: none !important;
                     background: #f8f9fa !important;
                     background-color: #f8f9fa !important;
-                    color-scheme: light !important;
+                    color-scheme: light only !important;
                     --gmp-mat-background: #f8f9fa !important;
                     --gmp-mat-color: #212529 !important;
                 }
@@ -98,6 +99,7 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
                 gmp-place-autocomplete * {
                     background: transparent !important;
                     background-color: transparent !important;
+                    color-scheme: light only !important;
                 }
                 gmp-place-autocomplete::part(input),
                 gmp-place-autocomplete::part(text-input) {
@@ -123,6 +125,17 @@ const AddressAutocomplete = ({ onPlaceSelected, placeholder, id, className }) =>
                 gmp-place-autocomplete::part(search-icon) {
                     background: transparent !important;
                     background-color: transparent !important;
+                }
+                /* Force light mode on dropdown overlay */
+                gmp-internal-place-autocomplete-overlay,
+                .gmp-place-autocomplete-overlay,
+                [class*="gmp-place-autocomplete"] {
+                    color-scheme: light only !important;
+                    background-color: #ffffff !important;
+                }
+                gmp-internal-place-autocomplete-overlay *,
+                .gmp-place-autocomplete-overlay * {
+                    color-scheme: light only !important;
                 }
             `;
             if (!document.querySelector('style[data-gmp-autocomplete]')) {
