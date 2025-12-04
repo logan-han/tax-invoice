@@ -39,6 +39,11 @@ const BusinessDetailsForm = ({ onChange }) => {
             accountNumber: queryParams.get('businessAccountNumber') || ''
         };
         setBusinessDetails(details);
+
+        // Auto-show manual fields when address data exists from URL
+        if (details.street || details.suburb || details.state || details.postcode) {
+            setShowManualFields(true);
+        }
     }, []);
 
     const handlePlaceSelected = (place) => {

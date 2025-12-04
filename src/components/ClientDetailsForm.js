@@ -29,6 +29,11 @@ const ClientDetailsForm = ({ onChange }) => {
             acn: queryParams.get('clientAcn') || ''
         };
         setClientDetails(details);
+
+        // Auto-show manual fields when address data exists from URL
+        if (details.street || details.suburb || details.state || details.postcode) {
+            setShowManualFields(true);
+        }
     }, []);
 
     const handlePlaceSelected = (place) => {
@@ -105,10 +110,10 @@ const ClientDetailsForm = ({ onChange }) => {
                 <div className="group">
                     <label htmlFor="clientFullAddress">Address</label> {/* Changed id to avoid conflict */}
                     <AddressAutocomplete
-                        id="clientFullAddress" // Changed id to avoid conflict
+                        id="clientFullAddress"
                         onPlaceSelected={handlePlaceSelected}
                         placeholder="Enter the client address"
-                        className="form-control" // Add className here
+                        className="form-control"
                     />
                 </div>
                 <button type="button" onClick={() => setShowManualFields(!showManualFields)} className="btn btn-primary mb-3">
