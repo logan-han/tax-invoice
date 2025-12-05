@@ -46,8 +46,11 @@ describe('ClientDetailsForm', () => {
         // Simulate typing the address that triggers the mock's onPlaceSelected
         fireEvent.change(autocompleteInput, { target: { value: '456 High St, Melbourne VIC 3000' } });
 
-        // Click manual entry button to reveal fields (if needed by your logic)
-        fireEvent.click(screen.getByText('Enter Manually'));
+        // Click manual entry button to reveal fields if not already visible
+        const toggleButton = screen.getByRole('button', { name: /Enter Manually|Hide Manual Entry/ });
+        if (toggleButton.textContent === 'Enter Manually') {
+            fireEvent.click(toggleButton);
+        }
 
         // Check if fields are populated (ensure manual fields are visible)
         expect(screen.getByLabelText('Street').value).toBe('456 High St');
@@ -64,7 +67,11 @@ test('renders ClientDetailsForm component and updates details', () => {
     <ClientDetailsForm onChange={handleChange} />
   );
 
-  fireEvent.click(screen.getByText('Enter Manually'));
+  // Click manual entry button to reveal fields if not already visible
+  const toggleButton = screen.getByRole('button', { name: /Enter Manually|Hide Manual Entry/ });
+  if (toggleButton.textContent === 'Enter Manually') {
+    fireEvent.click(toggleButton);
+  }
 
   fireEvent.change(getByLabelText('Client Name'), { target: { value: 'New Client' } });
   fireEvent.change(getByLabelText('Street'), { target: { value: '456 Avenue' } });
