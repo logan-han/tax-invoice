@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
+import { render, screen, act, cleanup } from '@testing-library/react';
 import AddressAutocomplete from '../AddressAutocomplete';
 
 describe('AddressAutocomplete', () => {
@@ -137,6 +137,8 @@ describe('AddressAutocomplete', () => {
 
   describe('Google Maps API integration', () => {
     beforeEach(() => {
+      // Ensure any components from previous tests are fully unmounted
+      cleanup();
       vi.useFakeTimers();
       // Clear mock call history from previous tests
       mockPlaceAutocomplete.setAttribute.mockClear();
@@ -144,36 +146,9 @@ describe('AddressAutocomplete', () => {
     });
 
     afterEach(() => {
+      cleanup();
+      vi.clearAllTimers();
       vi.useRealTimers();
-    });
-
-    it('initializes PlaceAutocompleteElement when Google Maps API is available', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
-
-      (window as unknown as { google: unknown }).google = {
-        maps: {
-          places: {
-            PlaceAutocompleteElement: mockPlaceAutocompleteConstructor,
-          },
-        },
-      };
-
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-          placeholder="Enter address"
-        />
-      );
-
-      await act(async () => {
-        vi.advanceTimersByTime(100);
-      });
-
-      expect(mockPlaceAutocompleteConstructor).toHaveBeenCalledWith({
-        includedRegionCodes: ['au'],
-      });
-      expect(mockPlaceAutocomplete.setAttribute).toHaveBeenCalledWith('placeholder', 'Enter address');
     });
 
     it('does not set placeholder attribute when no placeholder provided', async () => {
@@ -207,6 +182,35 @@ describe('AddressAutocomplete', () => {
       });
 
       expect(isolatedSetAttribute).not.toHaveBeenCalled();
+    });
+
+    it('initializes PlaceAutocompleteElement when Google Maps API is available', async () => {
+      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+
+      (window as unknown as { google: unknown }).google = {
+        maps: {
+          places: {
+            PlaceAutocompleteElement: mockPlaceAutocompleteConstructor,
+          },
+        },
+      };
+
+      render(
+        <AddressAutocomplete
+          id="test-autocomplete"
+          onPlaceSelected={mockOnPlaceSelected}
+          placeholder="Enter address"
+        />
+      );
+
+      await act(async () => {
+        vi.advanceTimersByTime(100);
+      });
+
+      expect(mockPlaceAutocompleteConstructor).toHaveBeenCalledWith({
+        includedRegionCodes: ['au'],
+      });
+      expect(mockPlaceAutocomplete.setAttribute).toHaveBeenCalledWith('placeholder', 'Enter address');
     });
 
     it('retries initialization when Google Maps API is not yet loaded', async () => {
