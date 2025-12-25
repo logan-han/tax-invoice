@@ -66,4 +66,21 @@ describe('formatPhoneNumber', () => {
   it('handles empty string', () => {
     expect(formatPhoneNumber('')).toBe('');
   });
+
+  it('returns partial mobile number starting with 04 as-is', () => {
+    // Mobile number that starts with 04 but doesn't match full 10-digit pattern
+    expect(formatPhoneNumber('041234')).toBe('041234');
+    expect(formatPhoneNumber('04123456789')).toBe('04123456789'); // Too many digits
+  });
+
+  it('returns partial landline number as-is', () => {
+    // Landline number that doesn't match full 10-digit pattern
+    expect(formatPhoneNumber('021234')).toBe('021234');
+    expect(formatPhoneNumber('02123456789')).toBe('02123456789'); // Too many digits
+  });
+
+  it('strips non-digit characters before formatting', () => {
+    expect(formatPhoneNumber('0412-345-678')).toBe('0412 345 678');
+    expect(formatPhoneNumber('(02) 1234 5678')).toBe('02 1234 5678');
+  });
 });
