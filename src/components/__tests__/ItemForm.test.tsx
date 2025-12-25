@@ -110,4 +110,209 @@ describe('ItemForm', () => {
     expect(options[1]).toHaveTextContent('Add GST');
     expect(options[2]).toHaveTextContent('Incl. GST');
   });
+
+  it('calls onChange when GST is changed', () => {
+    const items = [createItem()];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    const gstSelect = screen.getByRole('combobox');
+    fireEvent.change(gstSelect, { target: { value: 'inclusive', name: 'gst' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(newItems[0].gst).toBe('inclusive');
+  });
+
+  it('calls onChange when price is changed', () => {
+    const items = [createItem()];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    const priceInput = screen.getByPlaceholderText('Price');
+    fireEvent.change(priceInput, { target: { value: '150', name: 'price' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(newItems[0].price).toBe(150);
+  });
+
+  it('reads items from URL parameters on first load', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?itemName_0=URL+Item&itemQuantity_0=5&itemPrice_0=200&itemGst_0=add',
+        href: 'http://localhost/?itemName_0=URL+Item&itemQuantity_0=5&itemPrice_0=200&itemGst_0=add'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[0][0];
+    expect(newItems[0].name).toBe('URL Item');
+    expect(newItems[0].quantity).toBe(5);
+    expect(newItems[0].price).toBe(200);
+    expect(newItems[0].gst).toBe('add');
+  });
+
+  it('creates default item when items become empty', () => {
+    const { rerender } = render(<ItemForm items={[createItem()]} onChange={mockOnChange} />);
+
+    // Clear mock and rerender with empty items
+    mockOnChange.mockClear();
+    rerender(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    // Should create a default item when items are empty after first load
+    expect(mockOnChange).toHaveBeenCalled();
+  });
+
+  it('updates URL when items change', () => {
+    const items = [createItem({ name: 'Test Item' })];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    expect(window.history.replaceState).toHaveBeenCalled();
+  });
+
+  it('handles invalid quantity gracefully', () => {
+    const items = [createItem()];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    const qtyInput = screen.getByPlaceholderText('Qty');
+    fireEvent.change(qtyInput, { target: { value: 'abc', name: 'quantity' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(newItems[0].quantity).toBe(0);
+  });
+
+  it('handles invalid price gracefully', () => {
+    const items = [createItem()];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    const priceInput = screen.getByPlaceholderText('Price');
+    fireEvent.change(priceInput, { target: { value: 'abc', name: 'price' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(newItems[0].price).toBe(0);
+  });
+
+  it('reads multiple items from URL parameters', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?itemName_0=Item+1&itemQuantity_0=1&itemPrice_0=100&itemGst_0=no&itemName_1=Item+2&itemQuantity_1=2&itemPrice_1=200&itemGst_1=add',
+        href: 'http://localhost/?itemName_0=Item+1&itemQuantity_0=1&itemPrice_0=100&itemGst_0=no&itemName_1=Item+2&itemQuantity_1=2&itemPrice_1=200&itemGst_1=add'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[0][0];
+    expect(newItems.length).toBe(2);
+    expect(newItems[0].name).toBe('Item 1');
+    expect(newItems[1].name).toBe('Item 2');
+  });
+
+  it('does not read from URL on subsequent renders', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?itemName_0=URL+Item',
+        href: 'http://localhost/?itemName_0=URL+Item'
+      },
+      writable: true,
+    });
+
+    const { rerender } = render(<ItemForm items={[]} onChange={mockOnChange} />);
+    mockOnChange.mockClear();
+
+    // Rerender with new items - should not read from URL again
+    rerender(<ItemForm items={[createItem({ name: 'New Item' })]} onChange={mockOnChange} />);
+
+    // Should not have been called to load from URL
+    const calls = mockOnChange.mock.calls;
+    const urlLoadCall = calls.find(call => call[0]?.[0]?.name === 'URL Item');
+    expect(urlLoadCall).toBeUndefined();
+  });
+
+  it('uses default values for missing URL parameters', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        // Only name is provided, quantity/price/gst are missing
+        search: '?itemName_0=Minimal+Item',
+        href: 'http://localhost/?itemName_0=Minimal+Item'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[0][0];
+    expect(newItems[0].name).toBe('Minimal Item');
+    expect(newItems[0].quantity).toBe(1); // Default
+    expect(newItems[0].price).toBe(0); // Default
+    expect(newItems[0].gst).toBe('add'); // Default
+  });
+
+  it('handles invalid quantity in URL parameters', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?itemName_0=Item&itemQuantity_0=abc',
+        href: 'http://localhost/?itemName_0=Item&itemQuantity_0=abc'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[0][0];
+    expect(newItems[0].quantity).toBe(1); // Falls back to default
+  });
+
+  it('handles invalid price in URL parameters', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '?itemName_0=Item&itemPrice_0=invalid',
+        href: 'http://localhost/?itemName_0=Item&itemPrice_0=invalid'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[0][0];
+    expect(newItems[0].price).toBe(0); // Falls back to default
+  });
+
+  it('handles changing item name via input', () => {
+    const items = [createItem({ name: 'Original' })];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    const nameInput = screen.getByPlaceholderText('Description');
+    fireEvent.change(nameInput, { target: { value: 'Updated Name', name: 'name' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(newItems[0].name).toBe('Updated Name');
+  });
+
+  it('does not load from URL when no items in URL', () => {
+    Object.defineProperty(window, 'location', {
+      value: {
+        search: '',
+        href: 'http://localhost/'
+      },
+      writable: true,
+    });
+
+    render(<ItemForm items={[]} onChange={mockOnChange} />);
+
+    // First call should be to create a default item, not to load from URL
+    const firstCall = mockOnChange.mock.calls[0][0];
+    expect(firstCall.length).toBe(1);
+    expect(firstCall[0].name).toBe('');
+  });
 });
