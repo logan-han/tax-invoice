@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(tree:*)",
+      "Bash(yarn install)",
+      "Bash(npm install)",
+      "Bash(npm audit:*)",
+      "Bash(yarn audit)",
+      "Bash(grep:*)",
+      "Bash(cat:*)",
+      "Bash(git add:*)",
+      "Bash(gh run view:*)",
+      "Bash(gh run:*)",
+      "Bash(npx prettier --write \"src/**/*.{ts,tsx,scss}\" \"e2e/**/*.js\")",
+      "Bash(yarn format:*)",
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(gh api:*)"
+    ]
+  }
+}
