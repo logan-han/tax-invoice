@@ -60,10 +60,23 @@ function App() {
 
   useEffect(() => {
     const queryParams = new URLSearchParams(window.location.search);
-    const business = safeJsonParse<BusinessDetails>(
-      queryParams.get('business'),
-      emptyBusinessDetails
-    );
+
+    // Read business details from flat URL params
+    const business: BusinessDetails = {
+      name: queryParams.get('businessName') || '',
+      street: queryParams.get('businessStreet') || '',
+      suburb: queryParams.get('businessSuburb') || '',
+      state: queryParams.get('businessState') || '',
+      postcode: queryParams.get('businessPostcode') || '',
+      phone: queryParams.get('businessPhone') || '',
+      email: queryParams.get('businessEmail') || '',
+      abn: queryParams.get('businessAbn') || '',
+      acn: queryParams.get('businessAcn') || '',
+      accountName: queryParams.get('businessAccountName') || '',
+      bsb: queryParams.get('businessBsb') || '',
+      accountNumber: queryParams.get('businessAccountNumber') || '',
+    };
+
     const client = safeJsonParse<ClientDetails>(queryParams.get('client'), emptyClientDetails);
     const storedItems = safeJsonParse<InvoiceItem[]>(queryParams.get('items'), []);
     setBusinessDetails(business);
@@ -79,7 +92,19 @@ function App() {
       invoice: InvoiceDetails
     ) => {
       const url = new URL(window.location.href);
-      url.searchParams.set('business', JSON.stringify(business));
+      // Use flat format for business details
+      url.searchParams.set('businessName', business.name);
+      url.searchParams.set('businessStreet', business.street);
+      url.searchParams.set('businessSuburb', business.suburb);
+      url.searchParams.set('businessState', business.state);
+      url.searchParams.set('businessPostcode', business.postcode);
+      url.searchParams.set('businessPhone', business.phone);
+      url.searchParams.set('businessEmail', business.email);
+      url.searchParams.set('businessAbn', business.abn);
+      url.searchParams.set('businessAcn', business.acn);
+      url.searchParams.set('businessAccountName', business.accountName);
+      url.searchParams.set('businessBsb', business.bsb);
+      url.searchParams.set('businessAccountNumber', business.accountNumber);
       url.searchParams.set('client', JSON.stringify(client));
       url.searchParams.set('items', JSON.stringify(itemsList));
       url.searchParams.set('invoice', JSON.stringify(invoice));
@@ -137,7 +162,7 @@ function App() {
           <div className="col-md-6 mb-4">
             <div className="card shadow-sm h-100">
               <div className="card-body">
-                <BusinessDetailsForm onChange={handleBusinessDetailsChange} />
+                <BusinessDetailsForm onChange={handleBusinessDetailsChange} value={businessDetails} />
               </div>
             </div>
           </div>

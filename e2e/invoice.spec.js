@@ -141,14 +141,12 @@ test.describe('Australian Tax Invoice Generator', () => {
       await page.waitForTimeout(500);
 
       const url = page.url();
-      expect(url).toContain('business=');
+      expect(url).toContain('businessName=');
       // URL uses + for spaces (application/x-www-form-urlencoded)
       expect(url).toContain('URL+Test+Business');
     });
 
-    // TODO: Fix URL state restoration - there's a race condition between
-    // App.tsx and BusinessDetailsForm both reading URL params
-    test.skip('should restore state from URL parameters', async ({ page }) => {
+    test('should restore state from URL parameters', async ({ page }) => {
       await page.goto('/?businessName=Restored+Business', { waitUntil: 'networkidle' });
 
       const businessNameInput = page.locator('#business-name');
