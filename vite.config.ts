@@ -13,11 +13,13 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
+        api: 'modern-compiler',
         silenceDeprecations: [
           'legacy-js-api',
           'import',
           'global-builtin',
           'color-functions',
+          'if-function',
         ],
       },
     },

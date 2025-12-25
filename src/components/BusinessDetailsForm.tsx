@@ -7,50 +7,42 @@ import type { BusinessDetails, PlaceResult } from '../types';
 
 interface BusinessDetailsFormProps {
   onChange: (details: BusinessDetails) => void;
+  value?: BusinessDetails;
 }
+
+const emptyBusinessDetails: BusinessDetails = {
+  name: '',
+  street: '',
+  suburb: '',
+  state: '',
+  postcode: '',
+  phone: '',
+  email: '',
+  abn: '',
+  acn: '',
+  accountName: '',
+  bsb: '',
+  accountNumber: '',
+};
 
 const BusinessDetailsForm = memo(function BusinessDetailsForm({
   onChange,
+  value,
 }: BusinessDetailsFormProps) {
-  const [businessDetails, setBusinessDetails] = useState<BusinessDetails>({
-    name: '',
-    street: '',
-    suburb: '',
-    state: '',
-    postcode: '',
-    phone: '',
-    email: '',
-    abn: '',
-    acn: '',
-    accountName: '',
-    bsb: '',
-    accountNumber: '',
-  });
+  const [businessDetails, setBusinessDetails] = useState<BusinessDetails>(
+    value || emptyBusinessDetails
+  );
 
   const [showManualFields, setShowManualFields] = useState(false);
 
   useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
-    const details: BusinessDetails = {
-      name: queryParams.get('businessName') || '',
-      street: queryParams.get('businessStreet') || '',
-      suburb: queryParams.get('businessSuburb') || '',
-      state: queryParams.get('businessState') || '',
-      postcode: queryParams.get('businessPostcode') || '',
-      phone: queryParams.get('businessPhone') || '',
-      email: queryParams.get('businessEmail') || '',
-      abn: queryParams.get('businessAbn') || '',
-      acn: queryParams.get('businessAcn') || '',
-      accountName: queryParams.get('businessAccountName') || '',
-      bsb: queryParams.get('businessBsb') || '',
-      accountNumber: queryParams.get('businessAccountNumber') || '',
-    };
-    setBusinessDetails(details);
-
-    if (details.street || details.suburb || details.state || details.postcode) {
-      setShowManualFields(true);
+    if (value) {
+      setBusinessDetails(value);
+      if (value.street || value.suburb || value.state || value.postcode) {
+        setShowManualFields(true);
+      }
     }
-  }, []);
+  }, [value]);
 
   const handlePlaceSelected = useCallback((place: PlaceResult) => {
     if (!place || !place.address_components) {
@@ -118,26 +110,8 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
   );
 
   useEffect(() => {
-    updateURL(businessDetails);
     onChange(businessDetails);
   }, [businessDetails, onChange]);
-
-  const updateURL = (details: BusinessDetails) => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('businessName', details.name);
-    url.searchParams.set('businessStreet', details.street);
-    url.searchParams.set('businessSuburb', details.suburb);
-    url.searchParams.set('businessState', details.state);
-    url.searchParams.set('businessPostcode', details.postcode);
-    url.searchParams.set('businessPhone', details.phone);
-    url.searchParams.set('businessEmail', details.email);
-    url.searchParams.set('businessAbn', details.abn);
-    url.searchParams.set('businessAcn', details.acn);
-    url.searchParams.set('businessAccountName', details.accountName);
-    url.searchParams.set('businessBsb', details.bsb);
-    url.searchParams.set('businessAccountNumber', details.accountNumber);
-    window.history.replaceState({}, '', url);
-  };
 
   const toggleManualFields = useCallback(() => {
     setShowManualFields((prev) => !prev);
