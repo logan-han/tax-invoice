@@ -82,4 +82,78 @@ describe('InvoiceDetailsForm', () => {
 
     expect(mockOnChange).toHaveBeenCalled();
   });
+
+  it('calls onChange when invoice number is changed manually', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const invoiceNumberInput = screen.getByLabelText('Invoice Number');
+    fireEvent.change(invoiceNumberInput, { target: { value: 'CUSTOM-001' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(lastCall.invoiceNumber).toBe('CUSTOM-001');
+  });
+
+  it('calls onChange when due date is changed manually', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const dueDateInput = screen.getByLabelText('Due Date');
+    fireEvent.change(dueDateInput, { target: { value: '2025-03-01' } });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(lastCall.dueDate).toBe('2025-03-01');
+  });
+
+  it('updates invoice number based on new date when invoice date changes', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const invoiceDateInput = screen.getByLabelText('Invoice Date');
+    fireEvent.change(invoiceDateInput, { target: { value: '2025-03-15' } });
+
+    const invoiceNumberInput = screen.getByLabelText('Invoice Number') as HTMLInputElement;
+    expect(invoiceNumberInput.value).toBe('20250315-0001');
+  });
+
+  it('calls onChange on mount with default values', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    expect(mockOnChange).toHaveBeenCalled();
+    const firstCall = mockOnChange.mock.calls[0][0];
+    expect(firstCall).toHaveProperty('invoiceDate');
+    expect(firstCall).toHaveProperty('invoiceNumber');
+    expect(firstCall).toHaveProperty('dueDate');
+    expect(firstCall).toHaveProperty('currency');
+  });
+
+  it('has all currency options', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const currencySelect = screen.getByLabelText('Currency');
+    const options = currencySelect.querySelectorAll('option');
+
+    // Should have N/A + 10 currencies
+    expect(options.length).toBe(11);
+
+    // Check some specific currencies
+    expect(screen.getByRole('option', { name: 'AUD' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'USD' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'EUR' })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: 'N/A' })).toBeInTheDocument();
+  });
+
+  it('can select different currencies', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const currencySelect = screen.getByLabelText('Currency');
+
+    fireEvent.change(currencySelect, { target: { value: 'AUD' } });
+    expect(mockOnChange).toHaveBeenCalled();
+    let lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(lastCall.currency).toBe('AUD');
+
+    fireEvent.change(currencySelect, { target: { value: 'JPY' } });
+    lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
+    expect(lastCall.currency).toBe('JPY');
+  });
 });
