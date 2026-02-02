@@ -23,7 +23,7 @@
     "@react-google-maps/api": "^2.20.7",
     "bootstrap": "^5.3.8",
     "html2canvas": "^1.4.1",
-    "jspdf": "^3.0.4",
+    "jspdf": "^4.1.0",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "sass": "^1.94.2"
