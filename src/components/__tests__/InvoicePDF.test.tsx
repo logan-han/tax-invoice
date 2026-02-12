@@ -17,7 +17,12 @@ vi.mock('jspdf', () => ({
   default: vi.fn().mockImplementation(function () {
     return {
       getImageProperties: function () { return { width: 100, height: 100 }; },
-      internal: { pageSize: { getWidth: function () { return 210; }, getHeight: function () { return 297; } } },
+      internal: {
+        pageSize: {
+          getWidth: function () { return 210; },
+          getHeight: function () { return 297; },
+        },
+      },
       addImage: vi.fn(),
       addPage: vi.fn(),
       save: vi.fn(),
@@ -373,7 +378,12 @@ describe('InvoicePDF', () => {
     (jsPDF.default as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
       return {
         getImageProperties: function () { return { width: 100, height: 1000 }; },
-        internal: { pageSize: { getWidth: function () { return 210; }, getHeight: function () { return 297; } } },
+        internal: {
+          pageSize: {
+            getWidth: function () { return 210; },
+            getHeight: function () { return 297; },
+          },
+        },
         addImage: vi.fn(),
         addPage: mockAddPage,
         save: vi.fn(),
