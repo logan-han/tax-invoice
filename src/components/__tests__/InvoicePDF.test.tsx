@@ -5,22 +5,29 @@ import type { BusinessDetails, ClientDetails, InvoiceItem } from '../../types';
 
 // Mock html2canvas
 vi.mock('html2canvas', () => ({
-  default: vi.fn(() =>
-    Promise.resolve({
-      toDataURL: () => 'data:image/jpeg;base64,mock',
-    })
-  ),
+  default: vi.fn(function () {
+    return Promise.resolve({
+      toDataURL: function () { return 'data:image/jpeg;base64,mock'; },
+    });
+  }),
 }));
 
 // Mock jsPDF
 vi.mock('jspdf', () => ({
-  default: vi.fn().mockImplementation(() => ({
-    getImageProperties: () => ({ width: 100, height: 100 }),
-    internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
-    addImage: vi.fn(),
-    addPage: vi.fn(),
-    save: vi.fn(),
-  })),
+  default: vi.fn().mockImplementation(function () {
+    return {
+      getImageProperties: function () { return { width: 100, height: 100 }; },
+      internal: {
+        pageSize: {
+          getWidth: function () { return 210; },
+          getHeight: function () { return 297; },
+        },
+      },
+      addImage: vi.fn(),
+      addPage: vi.fn(),
+      save: vi.fn(),
+    };
+  }),
 }));
 
 describe('InvoicePDF', () => {
@@ -363,18 +370,25 @@ describe('InvoicePDF', () => {
     const html2canvas = await import('html2canvas');
     // Mock a tall image that requires multiple pages
     (html2canvas.default as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      toDataURL: () => 'data:image/jpeg;base64,mock',
+      toDataURL: function () { return 'data:image/jpeg;base64,mock'; },
     });
 
     const jsPDF = await import('jspdf');
     const mockAddPage = vi.fn();
-    (jsPDF.default as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(() => ({
-      getImageProperties: () => ({ width: 100, height: 1000 }), // Very tall image
-      internal: { pageSize: { getWidth: () => 210, getHeight: () => 297 } },
-      addImage: vi.fn(),
-      addPage: mockAddPage,
-      save: vi.fn(),
-    }));
+    (jsPDF.default as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
+      return {
+        getImageProperties: function () { return { width: 100, height: 1000 }; },
+        internal: {
+          pageSize: {
+            getWidth: function () { return 210; },
+            getHeight: function () { return 297; },
+          },
+        },
+        addImage: vi.fn(),
+        addPage: mockAddPage,
+        save: vi.fn(),
+      };
+    });
 
     render(
       <InvoicePDF
@@ -396,7 +410,7 @@ describe('InvoicePDF', () => {
   });
 
   it('handles PDF generation error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(function () {});
     const html2canvas = await import('html2canvas');
     (html2canvas.default as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Canvas error'));
 

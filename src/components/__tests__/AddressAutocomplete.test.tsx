@@ -20,10 +20,10 @@ describe('AddressAutocomplete', () => {
     const originalSetAttribute = element.setAttribute.bind(element);
     mockPlaceAutocomplete = Object.assign(element, {
       id: '',
-      setAttribute: vi.fn((name: string, value: string) => {
+      setAttribute: vi.fn(function (name: string, value: string) {
         originalSetAttribute(name, value);
       }),
-      addEventListener: vi.fn((event: string, handler: (event: unknown) => void) => {
+      addEventListener: vi.fn(function (event: string, handler: (event: unknown) => void) {
         eventHandlers[event] = handler;
       }),
     });
@@ -160,7 +160,7 @@ describe('AddressAutocomplete', () => {
         setAttribute: isolatedSetAttribute,
         addEventListener: vi.fn(),
       });
-      const mockPlaceAutocompleteConstructor = vi.fn(() => isolatedMock);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return isolatedMock; });
 
       (window as unknown as { google: unknown }).google = {
         maps: {
@@ -185,7 +185,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('initializes PlaceAutocompleteElement when Google Maps API is available', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
 
       (window as unknown as { google: unknown }).google = {
         maps: {
@@ -227,7 +227,7 @@ describe('AddressAutocomplete', () => {
       });
 
       // Now load the API
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -258,7 +258,7 @@ describe('AddressAutocomplete', () => {
         location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -299,7 +299,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles gmp-placeselect event without place', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -337,10 +337,10 @@ describe('AddressAutocomplete', () => {
         location: null,
       };
       const mockPlacePrediction = {
-        toPlace: vi.fn(() => mockPlace),
+        toPlace: vi.fn(function () { return mockPlace; }),
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -376,7 +376,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles gmp-select event without placePrediction', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -405,7 +405,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles gmp-select event with placePrediction without toPlace function', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -434,7 +434,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles error during place fetchFields', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(function () {});
       const mockFetchFields = vi.fn().mockRejectedValue(new Error('Fetch error'));
       const mockPlace = {
         fetchFields: mockFetchFields,
@@ -442,7 +442,7 @@ describe('AddressAutocomplete', () => {
         location: null,
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -480,7 +480,7 @@ describe('AddressAutocomplete', () => {
         location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -513,7 +513,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('adds autocomplete style to document head', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -538,7 +538,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('does not add duplicate styles', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -565,7 +565,7 @@ describe('AddressAutocomplete', () => {
         setAttribute: vi.fn(),
         addEventListener: vi.fn(),
       });
-      mockPlaceAutocompleteConstructor.mockReturnValue(mockPlaceAutocomplete2);
+      mockPlaceAutocompleteConstructor.mockImplementation(function () { return mockPlaceAutocomplete2; });
 
       render(
         <AddressAutocomplete
@@ -583,7 +583,7 @@ describe('AddressAutocomplete', () => {
     });
 
     it('cleans up autocomplete element on unmount', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(() => mockPlaceAutocomplete);
+      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
