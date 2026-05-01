@@ -11,10 +11,10 @@ test.describe('Australian Tax Invoice Generator', () => {
   });
 
   test('should have all form sections visible', async ({ page }) => {
-    await expect(page.getByText('Your Business Details')).toBeVisible();
-    await expect(page.getByText('Client Details')).toBeVisible();
-    await expect(page.getByText('Invoice Details')).toBeVisible();
-    await expect(page.getByText('Invoice Items')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Your business' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Bill to' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Invoice', exact: true })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Line items' })).toBeVisible();
   });
 
   test.describe('Business Details Form', () => {
@@ -44,7 +44,7 @@ test.describe('Australian Tax Invoice Generator', () => {
       await expect(clientNameInput).toHaveValue('Client Company Ltd');
     });
 
-    test('should allow entering client email', async ({ page }) => {
+    test('should allow entering business email', async ({ page }) => {
       const emailInput = page.locator('#business-email');
       await emailInput.fill('client@example.com');
       await expect(emailInput).toHaveValue('client@example.com');
@@ -52,11 +52,10 @@ test.describe('Australian Tax Invoice Generator', () => {
   });
 
   test.describe('Invoice Items', () => {
-    test('should add a new item when clicking Add Item', async ({ page }) => {
-      // Wait for the auto-added default item to appear first
+    test('should add a new item when clicking Add item', async ({ page }) => {
       await page.waitForSelector('input[placeholder*="Description"]');
 
-      const addButton = page.locator('button:has-text("Add Item")');
+      const addButton = page.getByRole('button', { name: 'Add new invoice item' });
       const initialCount = await page.locator('input[placeholder*="Description"]').count();
 
       await addButton.click();
@@ -65,8 +64,7 @@ test.describe('Australian Tax Invoice Generator', () => {
       await expect(descriptionInputs).toHaveCount(initialCount + 1);
     });
 
-    test('should calculate item total correctly', async ({ page }) => {
-      // Wait for the auto-added default item
+    test('should calculate item line total correctly', async ({ page }) => {
       await page.waitForSelector('input[placeholder*="Description"]');
 
       const quantityInput = page.locator('input[placeholder="Qty"]').first();
@@ -75,22 +73,21 @@ test.describe('Australian Tax Invoice Generator', () => {
       await quantityInput.fill('5');
       await priceInput.fill('100');
 
-      // Use first() to avoid strict mode violation (value appears in multiple places)
-      await expect(page.getByText('$500.00').first()).toBeVisible();
+      // With default +10% GST, 5 * 100 * 1.1 = 550
+      await expect(page.getByText('$550.00').first()).toBeVisible();
     });
 
-    test('should remove item when clicking delete', async ({ page }) => {
-      // Wait for the auto-added default item
+    test('should remove item when clicking the remove button', async ({ page }) => {
       await page.waitForSelector('input[placeholder*="Description"]');
 
-      const addButton = page.locator('button:has-text("Add Item")');
+      const addButton = page.getByRole('button', { name: 'Add new invoice item' });
       await addButton.click();
       await addButton.click();
 
       let descriptionInputs = page.locator('input[placeholder*="Description"]');
       await expect(descriptionInputs).toHaveCount(3); // 1 default + 2 added
 
-      const removeButton = page.locator('button.btn-outline-danger').first();
+      const removeButton = page.getByRole('button', { name: /remove item 1/i });
       await removeButton.click();
 
       descriptionInputs = page.locator('input[placeholder*="Description"]');
@@ -101,7 +98,6 @@ test.describe('Australian Tax Invoice Generator', () => {
   test.describe('Invoice Details', () => {
     test('should have invoice number auto-generated on page load', async ({ page }) => {
       const invoiceNumberInput = page.locator('input[name="invoiceNumber"]');
-      // Invoice number is auto-generated on page load
       await expect(invoiceNumberInput).not.toHaveValue('');
     });
 
@@ -113,16 +109,27 @@ test.describe('Australian Tax Invoice Generator', () => {
   });
 
   test.describe('GST Handling', () => {
-    test('should show GST options in dropdown', async ({ page }) => {
-      // Wait for the auto-added default item
+    test('should show GST options as segmented control', async ({ page }) => {
       await page.waitForSelector('input[placeholder*="Description"]');
 
-      // Use the gst-dropdown class to target the GST select specifically
-      const gstSelect = page.locator('.gst-dropdown').first();
-      await expect(gstSelect).toBeVisible();
+      const gstGroup = page.getByRole('tablist', { name: /item 1 gst/i });
+      await expect(gstGroup).toBeVisible();
 
-      const options = gstSelect.locator('option');
-      await expect(options).toHaveCount(3);
+      const tabs = gstGroup.getByRole('tab');
+      await expect(tabs).toHaveCount(3);
+      await expect(tabs.nth(0)).toHaveText('No');
+      await expect(tabs.nth(1)).toHaveText('+10%');
+      await expect(tabs.nth(2)).toHaveText('Incl.');
+    });
+
+    test('should switch GST mode when tapping a segment', async ({ page }) => {
+      await page.waitForSelector('input[placeholder*="Description"]');
+
+      const gstGroup = page.getByRole('tablist', { name: /item 1 gst/i });
+      const inclusiveTab = gstGroup.getByRole('tab', { name: 'Incl.' });
+
+      await inclusiveTab.click();
+      await expect(inclusiveTab).toHaveAttribute('aria-selected', 'true');
     });
   });
 
@@ -142,7 +149,6 @@ test.describe('Australian Tax Invoice Generator', () => {
 
       const url = page.url();
       expect(url).toContain('businessName=');
-      // URL uses + for spaces (application/x-www-form-urlencoded)
       expect(url).toContain('URL+Test+Business');
     });
 
@@ -160,7 +166,6 @@ test.describe('Full Invoice Workflow', () => {
     await page.goto('/', { waitUntil: 'networkidle' });
     await page.waitForSelector('h1');
 
-    // Wait for the auto-added default item to load
     await page.waitForSelector('input[placeholder*="Description"]');
 
     // Fill business details
@@ -176,12 +181,15 @@ test.describe('Full Invoice Workflow', () => {
     // Set invoice details
     await page.locator('input[name="invoiceDate"]').fill('2025-01-15');
 
-    // Fill the existing default item (item is auto-added on page load)
+    // Fill the default item
     await page.locator('input[placeholder*="Description"]').first().fill('Consulting Services');
     await page.locator('input[placeholder="Qty"]').first().fill('10');
     await page.locator('input[placeholder="Price"]').first().fill('150');
 
-    // Verify total is calculated (use first() to avoid strict mode violation)
+    // Switch this item's GST to No so the line total matches 10 * 150 = 1500
+    const gstGroup = page.getByRole('tablist', { name: /item 1 gst/i });
+    await gstGroup.getByRole('tab', { name: 'No' }).click();
+
     await expect(page.getByText('$1,500.00').first()).toBeVisible();
 
     // Verify PDF button is available

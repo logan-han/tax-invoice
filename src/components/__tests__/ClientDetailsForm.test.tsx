@@ -4,7 +4,15 @@ import ClientDetailsForm from '../ClientDetailsForm';
 
 // Mock AddressAutocomplete component
 vi.mock('../AddressAutocomplete', () => ({
-  default: ({ onPlaceSelected, placeholder, id }: { onPlaceSelected: (place: unknown) => void; placeholder?: string; id: string }) => (
+  default: ({
+    onPlaceSelected,
+    placeholder,
+    id,
+  }: {
+    onPlaceSelected: (place: unknown) => void;
+    placeholder?: string;
+    id: string;
+  }) => (
     <input
       id={id}
       data-testid="address-autocomplete"
@@ -25,7 +33,6 @@ vi.mock('../AddressAutocomplete', () => ({
         } else if (e.target.value === 'trigger-no-components') {
           onPlaceSelected({});
         } else if (e.target.value === 'trigger-partial') {
-          // Address with only street number and route (no suburb, state, postcode)
           onPlaceSelected({
             address_components: [
               { long_name: '789', short_name: '789', types: ['street_number'] },
@@ -53,16 +60,16 @@ describe('ClientDetailsForm', () => {
   it('renders the form with all fields', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    expect(screen.getByLabelText('Client Name')).toBeInTheDocument();
+    expect(screen.getByLabelText('Client name')).toBeInTheDocument();
     expect(screen.getByLabelText('ABN')).toBeInTheDocument();
     expect(screen.getByLabelText('ACN')).toBeInTheDocument();
-    expect(screen.getByText('Enter Manually')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /enter address manually/i })).toBeInTheDocument();
   });
 
   it('calls onChange when client name is entered', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    const nameInput = screen.getByLabelText('Client Name');
+    const nameInput = screen.getByLabelText('Client name');
     fireEvent.change(nameInput, { target: { value: 'Test Client', name: 'name' } });
 
     expect(mockOnChange).toHaveBeenCalled();
@@ -91,7 +98,7 @@ describe('ClientDetailsForm', () => {
   it('restricts postcode to 4 digits', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     const postcodeInput = screen.getByLabelText('Postcode') as HTMLInputElement;
     fireEvent.change(postcodeInput, { target: { value: '300012', name: 'postcode' } });
@@ -104,7 +111,7 @@ describe('ClientDetailsForm', () => {
 
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     expect(screen.getByLabelText('Street')).toBeInTheDocument();
     expect(screen.getByLabelText('Suburb')).toBeInTheDocument();
@@ -115,10 +122,10 @@ describe('ClientDetailsForm', () => {
   it('hides manual entry fields when button is clicked again', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
     expect(screen.getByLabelText('Street')).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText('Hide Manual Entry'));
+    fireEvent.click(screen.getByRole('button', { name: /hide manual entry/i }));
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
   });
 
@@ -134,6 +141,16 @@ describe('ClientDetailsForm', () => {
     expect(lastCall.suburb).toBe('Melbourne');
     expect(lastCall.state).toBe('VIC');
     expect(lastCall.postcode).toBe('3000');
+  });
+
+  it('does not reveal manual fields when place is selected from autocomplete', () => {
+    render(<ClientDetailsForm onChange={mockOnChange} />);
+
+    const autocomplete = screen.getByTestId('address-autocomplete');
+    fireEvent.change(autocomplete, { target: { value: 'trigger-place' } });
+
+    expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
+    expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
   });
 
   it('handles invalid place selection gracefully', () => {
@@ -161,7 +178,7 @@ describe('ClientDetailsForm', () => {
   it('has state dropdown with Australian states', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     const stateSelect = screen.getByLabelText('State');
     expect(stateSelect).toBeInTheDocument();
@@ -173,7 +190,7 @@ describe('ClientDetailsForm', () => {
   it('allows changing state via dropdown', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     const stateSelect = screen.getByLabelText('State');
     fireEvent.change(stateSelect, { target: { value: 'QLD', name: 'state' } });
@@ -186,7 +203,7 @@ describe('ClientDetailsForm', () => {
   it('allows entering street manually', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     const streetInput = screen.getByLabelText('Street');
     fireEvent.change(streetInput, { target: { value: '789 Manual St', name: 'street' } });
@@ -199,7 +216,7 @@ describe('ClientDetailsForm', () => {
   it('allows entering suburb manually', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    fireEvent.click(screen.getByText('Enter Manually'));
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
     const suburbInput = screen.getByLabelText('Suburb');
     fireEvent.change(suburbInput, { target: { value: 'Brisbane', name: 'suburb' } });
@@ -213,22 +230,21 @@ describe('ClientDetailsForm', () => {
     Object.defineProperty(window, 'location', {
       value: {
         search: '?clientName=URL+Client&clientStreet=URL+Street',
-        href: 'http://localhost/?clientName=URL+Client&clientStreet=URL+Street'
+        href: 'http://localhost/?clientName=URL+Client&clientStreet=URL+Street',
       },
       writable: true,
     });
 
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    expect(screen.getByLabelText('Client Name')).toHaveValue('URL Client');
-    // Street field should be visible because URL params include address data
+    expect(screen.getByLabelText('Client name')).toHaveValue('URL Client');
     expect(screen.getByLabelText('Street')).toHaveValue('URL Street');
   });
 
   it('updates URL when client details change', () => {
     render(<ClientDetailsForm onChange={mockOnChange} />);
 
-    const nameInput = screen.getByLabelText('Client Name');
+    const nameInput = screen.getByLabelText('Client name');
     fireEvent.change(nameInput, { target: { value: 'URL Test', name: 'name' } });
 
     expect(window.history.replaceState).toHaveBeenCalled();
