@@ -18,21 +18,6 @@ const safeJsonParse = <T,>(str: string | null, fallback: T): T => {
   }
 };
 
-const emptyBusinessDetails: BusinessDetails = {
-  name: '',
-  street: '',
-  suburb: '',
-  state: '',
-  postcode: '',
-  phone: '',
-  email: '',
-  abn: '',
-  acn: '',
-  accountName: '',
-  bsb: '',
-  accountNumber: '',
-};
-
 const emptyClientDetails: ClientDetails = {
   name: '',
   street: '',
