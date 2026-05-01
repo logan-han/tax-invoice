@@ -213,8 +213,6 @@ const InvoicePDF = memo(function InvoicePDF({
         </table>
       </div>
 
-      <div className="inv-thanks">Thank you for your business.</div>
-
       <div className="inv-footer">
         <div>
           <div className="bank-label">Remit to</div>
