@@ -1,7 +1,4 @@
-import { useState, useMemo, useCallback, memo, Fragment } from 'react';
-import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
-import '../styles.scss';
+import { useMemo, memo, Fragment } from 'react';
 import type { BusinessDetails, ClientDetails, InvoiceItem } from '../types';
 
 interface InvoicePDFProps {
@@ -12,7 +9,47 @@ interface InvoicePDFProps {
   invoiceNumber: string;
   dueDate: string;
   currency?: string;
+  notes?: string;
 }
+
+const MONTHS = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
+
+const formatDate = (iso: string): string => {
+  if (!iso) return '';
+  const parts = iso.split('-');
+  if (parts.length !== 3) return iso;
+  const [y, m, d] = parts;
+  const monthIdx = parseInt(m, 10) - 1;
+  if (Number.isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return iso;
+  return `${parseInt(d, 10)} ${MONTHS[monthIdx]} ${y}`;
+};
+
+const formatCurrency = (amount: number): string => {
+  const num = Number(amount) || 0;
+  const sign = num < 0 ? '-' : '';
+  const abs = Math.abs(num);
+  const str = abs.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
+  return `${sign}$${str}`;
+};
+
+const joinAddrTail = (p: {
+  suburb?: string;
+  state?: string;
+  postcode?: string;
+}): string => [p.suburb, p.state, p.postcode].filter(Boolean).join(' ');
 
 const InvoicePDF = memo(function InvoicePDF({
   businessDetails,
@@ -22,397 +59,187 @@ const InvoicePDF = memo(function InvoicePDF({
   invoiceNumber,
   dueDate,
   currency = '',
+  notes = '',
 }: InvoicePDFProps) {
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const { total, gst, grandTotal } = useMemo(() => {
-    const calculatedTotal = items.reduce(
-      (sum, item) =>
-        sum + item.quantity * (item.gst === 'inclusive' ? item.price / 1.1 : item.price),
-      0
-    );
-
-    const calculatedGst = items.reduce((totalGST, item) => {
-      if (item.gst === 'add') {
-        return totalGST + item.quantity * item.price * 0.1;
-      } else if (item.gst === 'inclusive') {
-        return totalGST + item.quantity * item.price * (1 - 1 / 1.1);
-      }
-      return totalGST;
-    }, 0);
-
-    return {
-      total: calculatedTotal,
-      gst: calculatedGst,
-      grandTotal: calculatedTotal + calculatedGst,
-    };
+  const { subtotal, gst, grandTotal } = useMemo(() => {
+    let sub = 0;
+    let gstSum = 0;
+    items.forEach((it) => {
+      const base = it.gst === 'inclusive' ? it.price / 1.1 : it.price;
+      sub += base * it.quantity;
+      if (it.gst === 'add') gstSum += it.price * it.quantity * 0.1;
+      else if (it.gst === 'inclusive') gstSum += it.price * it.quantity * (1 - 1 / 1.1);
+    });
+    return { subtotal: sub, gst: gstSum, grandTotal: sub + gstSum };
   }, [items]);
 
-  const formatDate = useCallback((date: string): string => {
-    if (!date) return '';
-    const [year, month, day] = date.split('-');
-    return `${day}-${month}-${year}`;
-  }, []);
-
-  const formatCurrency = useCallback((amount: number): string => {
-    const num = parseFloat(String(amount));
-    return `$${num.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,')}`;
-  }, []);
-
-  const generatePDF = useCallback(async () => {
-    const input = document.getElementById('invoice');
-    if (!input) return;
-
-    setIsGenerating(true);
-    try {
-      const canvas = await html2canvas(input, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        letterRendering: true,
-        allowTaint: true,
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.92);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const imgProps = pdf.getImageProperties(imgData);
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const scaleFactor = pdfWidth / imgProps.width;
-      const imgWidth = pdfWidth;
-      const imgHeight = imgProps.height * scaleFactor;
-
-      let position = 0;
-
-      if (imgHeight <= pdfHeight) {
-        pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-      } else {
-        let currentHeight = 0;
-        while (currentHeight < imgHeight) {
-          pdf.addImage(imgData, 'JPEG', 0, position, imgWidth, imgHeight);
-          currentHeight += pdfHeight;
-          if (currentHeight < imgHeight) {
-            pdf.addPage();
-            position = -currentHeight;
-          }
-        }
-      }
-
-      pdf.save(`invoice-${invoiceNumber}.pdf`);
-    } catch (error) {
-      console.error('Error generating PDF:', error);
-    } finally {
-      setIsGenerating(false);
-    }
-  }, [invoiceNumber]);
+  const hasBankDetails = Boolean(businessDetails.bsb && businessDetails.accountNumber);
+  const hasGst = gst > 0;
 
   return (
-    <div>
-      <h2>Preview</h2>
-      <div
-        id="invoice"
-        className="invoice"
-        style={{ width: '210mm', margin: '0 auto', border: 'none' }}
-      >
-        <table
-          align="center"
-          border={0}
-          cellPadding="0"
-          cellSpacing="0"
-          className="table"
-        >
-          <tbody>
+    <div className="paper" id="invoice">
+      <div className="inv-top">
+        <div>
+          <div className="inv-brand-name">{businessDetails.name || 'Your business'}</div>
+          <div className="inv-brand-meta">
+            {businessDetails.street && <div>{businessDetails.street}</div>}
+            {(businessDetails.suburb || businessDetails.state || businessDetails.postcode) && (
+              <div>{joinAddrTail(businessDetails)}</div>
+            )}
+            {businessDetails.email && <div>{businessDetails.email}</div>}
+            {businessDetails.phone && <div className="mono">{businessDetails.phone}</div>}
+            {businessDetails.abn && <div className="mono">ABN: {businessDetails.abn}</div>}
+            {businessDetails.acn && <div className="mono">ACN: {businessDetails.acn}</div>}
+          </div>
+        </div>
+        <div className="inv-badge">
+          <div className="inv-badge-kicker">Tax Invoice</div>
+          <div className="inv-badge-num">
+            #<span>{invoiceNumber || '—'}</span>
+          </div>
+          <div className="inv-meta-grid">
+            <span className="lbl">Issued</span>
+            <span>{formatDate(invoiceDate) || '—'}</span>
+            {dueDate && (
+              <Fragment>
+                <span className="lbl">Due Date:</span>
+                <span>{formatDate(dueDate)}</span>
+              </Fragment>
+            )}
+            {currency && (
+              <Fragment>
+                <span className="lbl">Currency</span>
+                <span>{currency}</span>
+              </Fragment>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="inv-parties">
+        <div className="clientDetails">
+          <div className="inv-party-label">Bill to</div>
+          <div className="inv-party-name">{clientDetails.name || 'Client name'}</div>
+          <div className="inv-party-detail">
+            {clientDetails.street && <div>{clientDetails.street}</div>}
+            {(clientDetails.suburb || clientDetails.state || clientDetails.postcode) && (
+              <div>{joinAddrTail(clientDetails)}</div>
+            )}
+            {clientDetails.abn && <div className="mono">ABN: {clientDetails.abn}</div>}
+            {clientDetails.acn && <div className="mono">ACN: {clientDetails.acn}</div>}
+          </div>
+        </div>
+        <div className="footerDetails">
+          <div className="inv-party-label">From</div>
+          <div className="inv-party-name">{businessDetails.name || '—'}</div>
+          <div className="inv-party-detail">
+            {businessDetails.abn && <div className="mono">ABN: {businessDetails.abn}</div>}
+            {businessDetails.acn && <div className="mono">ACN: {businessDetails.acn}</div>}
+            {businessDetails.email && <div>{businessDetails.email}</div>}
+            {businessDetails.phone && <div>{businessDetails.phone}</div>}
+          </div>
+        </div>
+      </div>
+
+      <table className="inv-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th className="num" style={{ width: 50 }}>
+              Qty
+            </th>
+            <th className="num" style={{ width: 90 }}>
+              Unit
+            </th>
+            <th style={{ width: 60 }}>GST</th>
+            <th className="num" style={{ width: 90 }}>
+              Amount {currency}
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.length === 0 && (
             <tr>
-              <td valign="top" style={{ width: '100%' }}>
-                Bill To: <br />
-                <br />
-                <table width="100%" cellSpacing="0" cellPadding="0">
-                  <tbody>
-                    <tr>
-                      <td valign="top" width="35%" className="clientDetails">
-                        <strong>{clientDetails.name}</strong>
-                        <br />
-                        {clientDetails.abn && (
-                          <Fragment>
-                            ABN: {clientDetails.abn}
-                            <br />
-                          </Fragment>
-                        )}
-                        {clientDetails.acn && (
-                          <Fragment>
-                            ACN: {clientDetails.acn}
-                            <br />
-                          </Fragment>
-                        )}
-                        {clientDetails.street}
-                        <br />
-                        {clientDetails.suburb} {clientDetails.state} {clientDetails.postcode}
-                        <br />
-                      </td>
-                      <td valign="top" width="35%" />
-                      <td valign="top" width="30%" className="invoiceDates">
-                        <table className="dateBox" style={{ width: '100%', lineHeight: '1.2' }}>
-                          <tbody>
-                            <tr>
-                              <td className="dateLabel" style={{ textAlign: 'right' }}>
-                                Invoice Date:
-                              </td>
-                              <td className="dateValue">{formatDate(invoiceDate)}</td>
-                            </tr>
-                            {dueDate && (
-                              <tr>
-                                <td className="dateLabel" style={{ textAlign: 'right' }}>
-                                  <b>Due Date:</b>
-                                </td>
-                                <td className="dateValue">{formatDate(dueDate)}</td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <table width="100%" height="100" cellSpacing="0" cellPadding="0">
-                  <tbody>
-                    <tr>
-                      <td>
-                        <div align="center" className="invoiceNumber">
-                          Tax Invoice # {invoiceNumber}
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <table
-                  width="100%"
-                  cellSpacing="0"
-                  cellPadding="2"
-                  border={1}
-                  style={{ borderColor: '#CCCCCC' }}
-                >
-                  <tbody>
-                    <tr>
-                      <td
-                        width="25%"
-                        style={{
-                          borderColor: '#ccc',
-                          backgroundColor: '#f2f2f2',
-                          textAlign: 'center',
-                        }}
-                        className="tableHeader"
-                      >
-                        <strong>Description</strong>
-                      </td>
-                      <td
-                        width="10%"
-                        style={{
-                          borderColor: '#ccc',
-                          backgroundColor: '#f2f2f2',
-                          textAlign: 'center',
-                        }}
-                        className="tableHeader"
-                      >
-                        <strong>Qty</strong>
-                      </td>
-                      <td
-                        width="15%"
-                        style={{
-                          borderColor: '#ccc',
-                          backgroundColor: '#f2f2f2',
-                          textAlign: 'center',
-                        }}
-                        className="tableHeader"
-                      >
-                        <strong>Unit Price</strong>
-                      </td>
-                      <td
-                        width="10%"
-                        style={{
-                          borderColor: '#ccc',
-                          backgroundColor: '#f2f2f2',
-                          textAlign: 'center',
-                        }}
-                        className="tableHeader"
-                      >
-                        <strong>GST</strong>
-                      </td>
-                      <td
-                        width="15%"
-                        style={{
-                          borderColor: '#ccc',
-                          backgroundColor: '#f2f2f2',
-                          textAlign: 'center',
-                        }}
-                        className="tableHeader"
-                      >
-                        <strong>Amount {currency && currency}</strong>
-                      </td>
-                    </tr>
-                    {items.map((item) => (
-                      <tr key={item.id}>
-                        <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>
-                          {item.name}
-                        </td>
-                        <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>
-                          {item.quantity}
-                        </td>
-                        <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>
-                          {formatCurrency(
-                            item.gst === 'inclusive' ? item.price / 1.1 : item.price
-                          )}
-                        </td>
-                        <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>
-                          {item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '0%'}
-                        </td>
-                        <td valign="top" className="tableCell" style={{ textAlign: 'center' }}>
-                          {formatCurrency(item.quantity * item.price)}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <table width="100%" cellSpacing="0" cellPadding="2" border={0}>
-                  <tbody>
-                    {gst > 0 ? (
-                      <Fragment>
-                        <tr>
-                          <td align="right" className="tableCell" width="85%">
-                            Subtotal
-                          </td>
-                          <td align="right" className="tableCell" width="15%">
-                            {formatCurrency(total)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td align="right" className="tableCell" width="85%">
-                            TOTAL GST(10%)
-                          </td>
-                          <td align="right" className="tableCell" width="15%">
-                            {formatCurrency(gst)}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td align="right" className="tableCell" width="85%">
-                            <b>Total {currency && currency}</b>
-                          </td>
-                          <td align="right" className="tableCell" width="15%">
-                            <b>{formatCurrency(grandTotal)}</b>
-                          </td>
-                        </tr>
-                      </Fragment>
-                    ) : (
-                      <tr>
-                        <td align="right" className="tableCell" width="85%">
-                          <b>Total {currency && currency}</b>
-                        </td>
-                        <td align="right" className="tableCell" width="15%">
-                          <b>{formatCurrency(grandTotal)}</b>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-                <table width="100%" height="50">
-                  <tbody>
-                    <tr>
-                      <td className="footer"></td>
-                    </tr>
-                  </tbody>
-                </table>
-                <table width="100%" cellSpacing="0" cellPadding="2">
-                  <tbody>
-                    <tr>
-                      <td width="33%" className="footerDetails" valign="top">
-                        <b>{businessDetails.name}</b>
-                        <br />
-                        {businessDetails.abn && (
-                          <Fragment>
-                            ABN: {businessDetails.abn}
-                            <br />
-                          </Fragment>
-                        )}
-                        {businessDetails.acn && (
-                          <Fragment>
-                            ACN: {businessDetails.acn}
-                            <br />
-                          </Fragment>
-                        )}
-                        {businessDetails.street}
-                        <br />
-                        {businessDetails.suburb} {businessDetails.state}{' '}
-                        {businessDetails.postcode}
-                        <br />
-                        {businessDetails.email && (
-                          <Fragment>
-                            {businessDetails.email}
-                            <br />
-                          </Fragment>
-                        )}
-                        {businessDetails.phone && (
-                          <Fragment>
-                            {businessDetails.phone}
-                            <br />
-                          </Fragment>
-                        )}
-                      </td>
-                      {businessDetails.bsb && businessDetails.accountNumber && (
-                        <td valign="top" width="34%" className="footerDetails" align="right">
-                          <table style={{ width: '60%', lineHeight: '1.2' }}>
-                            <tbody>
-                              <tr>
-                                <td
-                                  colSpan={2}
-                                  className="footerDetailsValue"
-                                  style={{ textAlign: 'right', paddingBottom: '5px' }}
-                                >
-                                  Bank Account Details
-                                </td>
-                              </tr>
-                              <tr>
-                                <td
-                                  colSpan={2}
-                                  className="footerDetailsValue"
-                                  style={{ textAlign: 'right' }}
-                                >
-                                  {businessDetails.accountName}
-                                </td>
-                              </tr>
-                              <tr>
-                                <td className="footerDetailsLabel" style={{ textAlign: 'right' }}>
-                                  BSB:
-                                </td>
-                                <td className="footerDetailsValue">{businessDetails.bsb}</td>
-                              </tr>
-                              <tr>
-                                <td className="footerDetailsLabel" style={{ textAlign: 'right' }}>
-                                  Account No:
-                                </td>
-                                <td className="footerDetailsValue">
-                                  {businessDetails.accountNumber}
-                                </td>
-                              </tr>
-                            </tbody>
-                          </table>
-                        </td>
-                      )}
-                    </tr>
-                  </tbody>
-                </table>
+              <td colSpan={5} className="empty">
+                No items yet.
               </td>
             </tr>
+          )}
+          {items.map((item) => {
+            const unit = item.gst === 'inclusive' ? item.price / 1.1 : item.price;
+            const amount = unit * item.quantity;
+            const gstTag =
+              item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '—';
+            return (
+              <tr key={item.id}>
+                <td>{item.name || <span className="placeholder">Item description</span>}</td>
+                <td className="num">{item.quantity}</td>
+                <td className="num">{formatCurrency(unit)}</td>
+                <td>
+                  <span className="gst-tag">{gstTag}</span>
+                </td>
+                <td className="num">{formatCurrency(amount)}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+
+      <div className="inv-totals">
+        <table className="inv-totals-table">
+          <tbody>
+            {hasGst ? (
+              <Fragment>
+                <tr>
+                  <td>Subtotal</td>
+                  <td className="num">{formatCurrency(subtotal)}</td>
+                </tr>
+                <tr>
+                  <td>TOTAL GST(10%)</td>
+                  <td className="num">{formatCurrency(gst)}</td>
+                </tr>
+                <tr className="grand">
+                  <td>Total {currency}</td>
+                  <td className="num">{formatCurrency(grandTotal)}</td>
+                </tr>
+              </Fragment>
+            ) : (
+              <tr className="grand">
+                <td>Total {currency}</td>
+                <td className="num">{formatCurrency(grandTotal)}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-      <button
-        onClick={generatePDF}
-        className="button pdf-button"
-        disabled={isGenerating}
-        aria-busy={isGenerating}
-        aria-label="Generate PDF invoice"
-      >
-        {isGenerating ? 'Generating...' : 'Generate PDF'}
-      </button>
+
+      <div className="inv-thanks">Thank you for your business.</div>
+
+      <div className="inv-footer">
+        <div>
+          <div className="bank-label">Remit to</div>
+          <div>{businessDetails.accountName || '—'}</div>
+          {hasBankDetails ? (
+            <Fragment>
+              <div className="bank-label" style={{ marginTop: 10 }}>
+                Bank Account Details
+              </div>
+              <div className="bank-row">
+                <span>BSB</span>
+                <span>{businessDetails.bsb}</span>
+                <span>Account</span>
+                <span>{businessDetails.accountNumber}</span>
+              </div>
+            </Fragment>
+          ) : (
+            <div className="bank-missing">Add BSB &amp; account</div>
+          )}
+        </div>
+        <div className="notes">
+          <div className="bank-label">Notes</div>
+          <div style={{ whiteSpace: 'pre-wrap' }}>{notes}</div>
+        </div>
+      </div>
     </div>
   );
 });

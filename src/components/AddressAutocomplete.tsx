@@ -1,6 +1,43 @@
 import { useEffect, useRef, memo } from 'react';
 import type { PlaceResult } from '../types';
 
+const GOOGLE_MAPS_API_KEY = 'AIzaSyBN-y5TW0Yz1qMBj7i4GA6KD2ToAp4us4o';
+const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-api';
+let googleMapsScriptPromise: Promise<void> | null = null;
+
+const ensureGoogleMapsScript = (): Promise<void> => {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if (window.google?.maps?.places?.PlaceAutocompleteElement) return Promise.resolve();
+  if (googleMapsScriptPromise) return googleMapsScriptPromise;
+
+  googleMapsScriptPromise = new Promise((resolve, reject) => {
+    const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID) as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Google Maps failed to load')), {
+        once: true,
+      });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.id = GOOGLE_MAPS_SCRIPT_ID;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&v=beta&loading=async`;
+    script.async = true;
+    script.defer = true;
+    script.addEventListener('load', () => resolve(), { once: true });
+    script.addEventListener('error', () => reject(new Error('Google Maps failed to load')), {
+      once: true,
+    });
+    document.head.appendChild(script);
+  }).catch((error) => {
+    googleMapsScriptPromise = null;
+    throw error;
+  });
+
+  return googleMapsScriptPromise;
+};
+
 interface AddressAutocompleteProps {
   onPlaceSelected: (place: PlaceResult) => void;
   placeholder?: string;
@@ -24,10 +61,17 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
 
   useEffect(() => {
     if (!containerRef.current || autocompleteRef.current) return;
+    let cancelled = false;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+
+    ensureGoogleMapsScript().catch((error) => {
+      console.error(error);
+    });
 
     const initAutocomplete = () => {
+      if (cancelled || typeof window === 'undefined') return;
       if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
-        setTimeout(initAutocomplete, 100);
+        retryTimer = setTimeout(initAutocomplete, 100);
         return;
       }
 
@@ -160,6 +204,10 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
 
     const container = containerRef.current;
     return () => {
+      cancelled = true;
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+      }
       if (autocompleteRef.current && container) {
         container.innerHTML = '';
         autocompleteRef.current = null;
@@ -173,7 +221,12 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
       className={className}
       style={{ padding: 0, border: 'none' }}
       aria-label={placeholder || 'Address autocomplete'}
-    />
+    >
+      <div className="address-fallback" aria-hidden="true">
+        <span className="address-fallback-icon">Search</span>
+        <span>{placeholder || 'Address autocomplete'}</span>
+      </div>
+    </div>
   );
 });
 

@@ -1,34 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
 import InvoicePDF from '../InvoicePDF';
 import type { BusinessDetails, ClientDetails, InvoiceItem } from '../../types';
-
-// Mock html2canvas
-vi.mock('html2canvas', () => ({
-  default: vi.fn(function () {
-    return Promise.resolve({
-      toDataURL: function () { return 'data:image/jpeg;base64,mock'; },
-    });
-  }),
-}));
-
-// Mock jsPDF
-vi.mock('jspdf', () => ({
-  default: vi.fn().mockImplementation(function () {
-    return {
-      getImageProperties: function () { return { width: 100, height: 100 }; },
-      internal: {
-        pageSize: {
-          getWidth: function () { return 210; },
-          getHeight: function () { return 297; },
-        },
-      },
-      addImage: vi.fn(),
-      addPage: vi.fn(),
-      save: vi.fn(),
-    };
-  }),
-}));
 
 describe('InvoicePDF', () => {
   const mockBusinessDetails: BusinessDetails = {
@@ -61,12 +34,8 @@ describe('InvoicePDF', () => {
     { id: '2', name: 'Item 2', quantity: 1, price: 50, gst: 'no' },
   ];
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('renders the preview section', () => {
-    render(
+  it('renders the paper with #invoice id for html2canvas capture', () => {
+    const { container } = render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
         clientDetails={mockClientDetails}
@@ -78,10 +47,10 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
+    expect(container.querySelector('#invoice')).not.toBeNull();
   });
 
-  it('displays business details in footer', () => {
+  it('displays business details', () => {
     render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
@@ -93,11 +62,11 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('Test Business')).toBeInTheDocument();
-    expect(screen.getByText(/ABN:\s*12 345 678 901/)).toBeInTheDocument();
+    expect(screen.getAllByText('Test Business').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/ABN:\s*12 345 678 901/).length).toBeGreaterThan(0);
   });
 
-  it('displays client details', () => {
+  it('displays client details in Bill to block', () => {
     render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
@@ -109,12 +78,13 @@ describe('InvoicePDF', () => {
       />
     );
 
+    expect(screen.getByText('Bill to')).toBeInTheDocument();
     expect(screen.getByText('Test Client')).toBeInTheDocument();
     expect(screen.getByText(/ABN:\s*98 765 432 109/)).toBeInTheDocument();
   });
 
-  it('displays invoice number', () => {
-    render(
+  it('displays invoice number prefixed with #', () => {
+    const { container } = render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
         clientDetails={mockClientDetails}
@@ -125,7 +95,9 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText(/Tax Invoice # 20250115-0001/)).toBeInTheDocument();
+    const badge = container.querySelector('.inv-badge-num');
+    expect(badge?.textContent).toContain('#');
+    expect(badge?.textContent).toContain('20250115-0001');
   });
 
   it('displays item names', () => {
@@ -157,41 +129,6 @@ describe('InvoicePDF', () => {
     );
 
     expect(screen.getByText('TOTAL GST(10%)')).toBeInTheDocument();
-  });
-
-  it('has a Generate PDF button', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
-
-    expect(screen.getByRole('button', { name: /generate pdf/i })).toBeInTheDocument();
-  });
-
-  it('shows loading state when generating PDF', async () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
-
-    const button = screen.getByRole('button', { name: /generate pdf/i });
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(screen.getByText('Generate PDF')).toBeInTheDocument();
-    });
   });
 
   it('displays bank details when provided', () => {
@@ -272,7 +209,7 @@ describe('InvoicePDF', () => {
     expect(screen.queryByText('Due Date:')).not.toBeInTheDocument();
   });
 
-  it('shows total without GST breakdown when no items have GST', () => {
+  it('shows grand total without Subtotal / GST rows when no items have GST', () => {
     const noGstItems: InvoiceItem[] = [
       { id: '1', name: 'Item 1', quantity: 2, price: 100, gst: 'no' },
       { id: '2', name: 'Item 2', quantity: 1, price: 50, gst: 'no' },
@@ -313,7 +250,7 @@ describe('InvoicePDF', () => {
   });
 
   it('handles empty date gracefully', () => {
-    render(
+    const { container } = render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
         clientDetails={mockClientDetails}
@@ -324,30 +261,7 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
-  });
-
-  it('handles missing invoice element in generatePDF', async () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
-
-    // Remove the invoice element
-    const invoiceElement = container.querySelector('#invoice');
-    invoiceElement?.remove();
-
-    const button = screen.getByRole('button', { name: /generate pdf/i });
-    fireEvent.click(button);
-
-    // Should not crash and button should still be there
-    expect(screen.getByRole('button', { name: /generate pdf/i })).toBeInTheDocument();
+    expect(container.querySelector('#invoice')).not.toBeNull();
   });
 
   it('displays currency in amount header when provided', () => {
@@ -366,76 +280,7 @@ describe('InvoicePDF', () => {
     expect(screen.getByText(/Amount\s+USD/)).toBeInTheDocument();
   });
 
-  it('handles multi-page PDF generation', async () => {
-    const html2canvas = await import('html2canvas');
-    // Mock a tall image that requires multiple pages
-    (html2canvas.default as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
-      toDataURL: function () { return 'data:image/jpeg;base64,mock'; },
-    });
-
-    const jsPDF = await import('jspdf');
-    const mockAddPage = vi.fn();
-    (jsPDF.default as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(function () {
-      return {
-        getImageProperties: function () { return { width: 100, height: 1000 }; },
-        internal: {
-          pageSize: {
-            getWidth: function () { return 210; },
-            getHeight: function () { return 297; },
-          },
-        },
-        addImage: vi.fn(),
-        addPage: mockAddPage,
-        save: vi.fn(),
-      };
-    });
-
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
-
-    const button = screen.getByRole('button', { name: /generate pdf/i });
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(mockAddPage).toHaveBeenCalled();
-    });
-  });
-
-  it('handles PDF generation error gracefully', async () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(function () {});
-    const html2canvas = await import('html2canvas');
-    (html2canvas.default as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error('Canvas error'));
-
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
-
-    const button = screen.getByRole('button', { name: /generate pdf/i });
-    fireEvent.click(button);
-
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error generating PDF:', expect.any(Error));
-    });
-
-    consoleSpy.mockRestore();
-  });
-
-  it('displays phone and email in footer when provided', () => {
+  it('displays phone and email when provided', () => {
     const { container } = render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
@@ -529,7 +374,7 @@ describe('InvoicePDF', () => {
     expect(screen.getByText(/Total\s+GBP/)).toBeInTheDocument();
   });
 
-  it('does not display ABN in footer when not provided', () => {
+  it('does not display ABN when not provided', () => {
     const businessWithoutABN = {
       ...mockBusinessDetails,
       abn: '',
@@ -546,10 +391,9 @@ describe('InvoicePDF', () => {
       />
     );
 
-    // Footer should not show business ABN
-    const footerDetails = container.querySelectorAll('.footerDetails');
-    const footerText = footerDetails[0]?.textContent || '';
-    expect(footerText).not.toContain('ABN:');
+    // The only ABN rendered should be the client's, in the Bill to block
+    const abnMatches = container.textContent?.match(/ABN:/g) || [];
+    expect(abnMatches.length).toBe(1);
   });
 
   it('does not display client ABN when not provided', () => {
@@ -569,12 +413,11 @@ describe('InvoicePDF', () => {
       />
     );
 
-    // Client details should not show ABN
-    const clientDetails = container.querySelector('.clientDetails');
-    expect(clientDetails?.textContent).not.toContain('ABN:');
+    const clientBlock = container.querySelector('.clientDetails');
+    expect(clientBlock?.textContent).not.toContain('ABN:');
   });
 
-  it('renders empty items list correctly', () => {
+  it('renders empty items list with a placeholder row', () => {
     render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
@@ -586,8 +429,7 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('Preview')).toBeInTheDocument();
-    // Total should be $0.00
+    expect(screen.getByText('No items yet.')).toBeInTheDocument();
     expect(screen.getByText('$0.00')).toBeInTheDocument();
   });
 
@@ -607,7 +449,6 @@ describe('InvoicePDF', () => {
       />
     );
 
-    // Should format with comma separator - multiple cells may show this value
     const formattedAmounts = screen.getAllByText('$12,345.67');
     expect(formattedAmounts.length).toBeGreaterThan(0);
   });
