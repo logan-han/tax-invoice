@@ -36,6 +36,7 @@ export interface InvoiceDetails {
   invoiceNumber: string;
   dueDate: string;
   currency: string;
+  notes: string;
 }
 
 export interface AddressComponent {

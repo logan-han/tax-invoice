@@ -18,37 +18,37 @@ describe('InvoiceDetailsForm', () => {
   it('renders the form with default values', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    expect(screen.getByLabelText('Invoice Date')).toBeInTheDocument();
-    expect(screen.getByLabelText('Due Date')).toBeInTheDocument();
-    expect(screen.getByLabelText('Invoice Number')).toBeInTheDocument();
+    expect(screen.getByLabelText('Invoice date')).toBeInTheDocument();
+    expect(screen.getByLabelText('Due date')).toBeInTheDocument();
+    expect(screen.getByLabelText('Invoice number')).toBeInTheDocument();
     expect(screen.getByLabelText('Currency')).toBeInTheDocument();
   });
 
   it('sets default invoice date to today', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceDateInput = screen.getByLabelText('Invoice Date') as HTMLInputElement;
+    const invoiceDateInput = screen.getByLabelText('Invoice date') as HTMLInputElement;
     expect(invoiceDateInput.value).toBe('2025-01-15');
   });
 
   it('sets default due date to 30 days from today', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const dueDateInput = screen.getByLabelText('Due Date') as HTMLInputElement;
+    const dueDateInput = screen.getByLabelText('Due date') as HTMLInputElement;
     expect(dueDateInput.value).toBe('2025-02-14');
   });
 
   it('generates invoice number from date', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceNumberInput = screen.getByLabelText('Invoice Number') as HTMLInputElement;
+    const invoiceNumberInput = screen.getByLabelText('Invoice number') as HTMLInputElement;
     expect(invoiceNumberInput.value).toBe('20250115-0001');
   });
 
   it('calls onChange when invoice date is changed', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceDateInput = screen.getByLabelText('Invoice Date');
+    const invoiceDateInput = screen.getByLabelText('Invoice date');
     fireEvent.change(invoiceDateInput, { target: { value: '2025-02-01' } });
 
     expect(mockOnChange).toHaveBeenCalled();
@@ -57,10 +57,10 @@ describe('InvoiceDetailsForm', () => {
   it('updates due date when invoice date changes', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceDateInput = screen.getByLabelText('Invoice Date');
+    const invoiceDateInput = screen.getByLabelText('Invoice date');
     fireEvent.change(invoiceDateInput, { target: { value: '2025-02-01' } });
 
-    const dueDateInput = screen.getByLabelText('Due Date') as HTMLInputElement;
+    const dueDateInput = screen.getByLabelText('Due date') as HTMLInputElement;
     expect(dueDateInput.value).toBe('2025-03-03');
   });
 
@@ -86,7 +86,7 @@ describe('InvoiceDetailsForm', () => {
   it('calls onChange when invoice number is changed manually', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceNumberInput = screen.getByLabelText('Invoice Number');
+    const invoiceNumberInput = screen.getByLabelText('Invoice number');
     fireEvent.change(invoiceNumberInput, { target: { value: 'CUSTOM-001' } });
 
     expect(mockOnChange).toHaveBeenCalled();
@@ -97,7 +97,7 @@ describe('InvoiceDetailsForm', () => {
   it('calls onChange when due date is changed manually', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const dueDateInput = screen.getByLabelText('Due Date');
+    const dueDateInput = screen.getByLabelText('Due date');
     fireEvent.change(dueDateInput, { target: { value: '2025-03-01' } });
 
     expect(mockOnChange).toHaveBeenCalled();
@@ -108,10 +108,10 @@ describe('InvoiceDetailsForm', () => {
   it('updates invoice number based on new date when invoice date changes', () => {
     render(<InvoiceDetailsForm onChange={mockOnChange} />);
 
-    const invoiceDateInput = screen.getByLabelText('Invoice Date');
+    const invoiceDateInput = screen.getByLabelText('Invoice date');
     fireEvent.change(invoiceDateInput, { target: { value: '2025-03-15' } });
 
-    const invoiceNumberInput = screen.getByLabelText('Invoice Number') as HTMLInputElement;
+    const invoiceNumberInput = screen.getByLabelText('Invoice number') as HTMLInputElement;
     expect(invoiceNumberInput.value).toBe('20250315-0001');
   });
 
