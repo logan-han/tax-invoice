@@ -1,0 +1,273 @@
+/* Invoice paper — literal hex/rgb only. html2canvas 1.4.1 does not parse oklch(). */
+
+.paper {
+  width: 595px;
+  min-height: 842px;
+  background: #fefdf9;
+  box-shadow:
+    0 1px 0 rgba(20, 22, 30, 0.04),
+    0 30px 60px -20px rgba(20, 22, 30, 0.18),
+    0 10px 20px -10px rgba(20, 22, 30, 0.08);
+  border-radius: 2px;
+  padding: 56px 56px 48px;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: #2b2e38;
+  font-size: 11px;
+  line-height: 1.5;
+  transform-origin: top center;
+}
+
+.inv-top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 24px;
+  margin-bottom: 36px;
+}
+
+.inv-brand-name {
+  font-family: 'Instrument Serif', 'Times New Roman', serif;
+  font-size: 28px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  font-weight: 400;
+  color: #2b2e38;
+}
+
+.inv-brand-meta {
+  color: #606570;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.inv-brand-meta .mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+}
+
+.inv-badge {
+  justify-self: end;
+  text-align: right;
+}
+
+.inv-badge-kicker {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  color: #6b7080;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.inv-badge-num {
+  font-family: 'Instrument Serif', 'Times New Roman', serif;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: #2b2e38;
+}
+
+.inv-meta-grid {
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 4px 16px;
+  margin-top: 10px;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  color: #4a4e58;
+  justify-content: end;
+}
+
+.inv-meta-grid .lbl {
+  color: #7a7f8a;
+  text-align: right;
+}
+
+.inv-parties {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #dddde3;
+  border-bottom: 1px solid #dddde3;
+  margin-bottom: 24px;
+}
+
+.inv-party-label {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7080;
+  margin-bottom: 6px;
+}
+
+.inv-party-name {
+  font-weight: 600;
+  font-size: 12px;
+  margin-bottom: 4px;
+  color: #2b2e38;
+}
+
+.inv-party-detail {
+  color: #5b5f6a;
+  font-size: 10.5px;
+  line-height: 1.55;
+}
+
+.inv-party-detail .mono {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+}
+
+.inv-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 10.5px;
+}
+
+.inv-table thead th {
+  text-align: left;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7080;
+  font-weight: 500;
+  padding: 0 6px 10px;
+  border-bottom: 1px solid #d4d4dc;
+}
+
+.inv-table thead th:first-child {
+  padding-left: 0;
+}
+
+.inv-table thead th:last-child {
+  padding-right: 0;
+}
+
+.inv-table thead th.num {
+  text-align: right;
+}
+
+.inv-table tbody td {
+  padding: 10px 6px;
+  border-bottom: 1px solid #e9eaee;
+  vertical-align: top;
+  color: #2b2e38;
+}
+
+.inv-table tbody td:first-child {
+  padding-left: 0;
+}
+
+.inv-table tbody td:last-child {
+  padding-right: 0;
+}
+
+.inv-table tbody td.num {
+  text-align: right;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-table .gst-tag {
+  display: inline-block;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  background: #ebecef;
+  color: #555964;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.inv-table .empty {
+  color: #8b8f99;
+  padding: 20px 0;
+}
+
+.inv-table .placeholder {
+  color: #a5a9b2;
+}
+
+.inv-totals {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.inv-totals-table {
+  width: 240px;
+  font-size: 11px;
+  border-collapse: collapse;
+}
+
+.inv-totals-table td {
+  padding: 4px 0;
+  color: #4a4e58;
+}
+
+.inv-totals-table td.num {
+  text-align: right;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-totals-table tr.grand td {
+  padding-top: 12px;
+  border-top: 1px solid #a7abb5;
+  font-weight: 600;
+  font-size: 13px;
+  color: #2b2e38;
+}
+
+.inv-totals-table tr.grand td.num {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.inv-thanks {
+  margin-top: 28px;
+  font-family: 'Instrument Serif', 'Times New Roman', serif;
+  font-size: 16px;
+  color: #4a4e58;
+  font-style: italic;
+}
+
+.inv-footer {
+  margin-top: 40px;
+  padding-top: 18px;
+  border-top: 1px solid #dddde3;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  font-size: 10px;
+  color: #606570;
+  line-height: 1.55;
+}
+
+.inv-footer .bank-label {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6b7080;
+  margin-bottom: 6px;
+}
+
+.inv-footer .bank-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 10px;
+  margin-top: 6px;
+  color: #2b2e38;
+}
+
+.inv-footer .bank-missing {
+  color: #8b8f99;
+  margin-top: 4px;
+}
+
+.inv-footer .notes {
+  text-align: right;
+}

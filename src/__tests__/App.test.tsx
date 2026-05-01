@@ -2,6 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import App from '../App';
 
+// Mock the PDF generator so tests don't touch html2canvas/jspdf.
+vi.mock('../utils/generatePdf', () => ({
+  generateInvoicePdf: vi.fn(() => Promise.resolve()),
+}));
+
 // Mock all child components to isolate App testing
 vi.mock('../components/BusinessDetailsForm', () => ({
   default: ({ onChange, value }: { onChange: (details: unknown) => void; value?: unknown }) => (
@@ -32,7 +37,7 @@ vi.mock('../components/BusinessDetailsForm', () => ({
 }));
 
 vi.mock('../components/ClientDetailsForm', () => ({
-  default: ({ onChange }: { onChange: (details: unknown) => void }) => (
+  default: ({ onChange, value }: { onChange: (details: unknown) => void; value?: unknown }) => (
     <div data-testid="client-form">
       <button
         onClick={() =>
@@ -49,6 +54,7 @@ vi.mock('../components/ClientDetailsForm', () => ({
       >
         Update Client
       </button>
+      <span data-testid="client-value">{value ? JSON.stringify(value) : 'empty'}</span>
     </div>
   ),
 }));
@@ -56,7 +62,9 @@ vi.mock('../components/ClientDetailsForm', () => ({
 vi.mock('../components/ItemForm', () => ({
   default: ({ items, onChange }: { items: unknown[]; onChange: (items: unknown[]) => void }) => (
     <div data-testid="item-form">
-      <button onClick={() => onChange([...items, { id: 'new', name: 'New Item' }])}>Add Item</button>
+      <button onClick={() => onChange([...items, { id: 'new', name: 'New Item' }])}>
+        Add Item
+      </button>
       <span data-testid="items-count">{items.length}</span>
     </div>
   ),
@@ -85,10 +93,6 @@ vi.mock('../components/InvoicePDF', () => ({
   default: () => <div data-testid="invoice-pdf">Invoice PDF</div>,
 }));
 
-vi.mock('@react-google-maps/api', () => ({
-  LoadScript: ({ children }: { children: React.ReactNode }) => <div data-testid="load-script">{children}</div>,
-}));
-
 describe('App', () => {
   beforeEach(() => {
     Object.defineProperty(window, 'location', {
@@ -106,7 +110,7 @@ describe('App', () => {
     render(<App />);
 
     expect(screen.getByText('Australian Tax Invoice Generator')).toBeInTheDocument();
-    expect(screen.getByText('Create professional tax invoices in minutes')).toBeInTheDocument();
+    expect(screen.getByText(/Create professional tax invoices in minutes/)).toBeInTheDocument();
   });
 
   it('renders all form components', () => {
@@ -119,10 +123,28 @@ describe('App', () => {
     expect(screen.getByTestId('invoice-pdf')).toBeInTheDocument();
   });
 
-  it('renders LoadScript wrapper', () => {
+  it('renders immediately without a Google Maps loading gate', () => {
     render(<App />);
 
-    expect(screen.getByTestId('load-script')).toBeInTheDocument();
+    expect(screen.getByText('Australian Tax Invoice Generator')).toBeInTheDocument();
+    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
+  });
+
+  it('renders the Generate PDF button', () => {
+    render(<App />);
+    expect(screen.getByRole('button', { name: /generate pdf/i })).toBeInTheDocument();
+  });
+
+  it('calls generateInvoicePdf when Generate PDF is clicked', async () => {
+    const { generateInvoicePdf } = await import('../utils/generatePdf');
+    render(<App />);
+
+    fireEvent.click(screen.getByText('Update Invoice'));
+    fireEvent.click(screen.getByRole('button', { name: /generate pdf/i }));
+
+    await waitFor(() => {
+      expect(generateInvoicePdf).toHaveBeenCalledWith('20250115-0001');
+    });
   });
 
   it('handles business details change', async () => {
@@ -205,8 +227,7 @@ describe('App', () => {
 
     render(<App />);
 
-    // The component should render without errors with parsed data
-    expect(screen.getByTestId('client-form')).toBeInTheDocument();
+    expect(screen.getByTestId('client-value').textContent).toContain('URL Client');
   });
 
   it('parses JSON items from URL params', () => {
@@ -251,7 +272,6 @@ describe('App', () => {
 
     fireEvent.click(screen.getByText('Update Business'));
 
-    // Verify state updates correctly
     await waitFor(() => {
       const businessValue = screen.getByTestId('business-value');
       expect(businessValue.textContent).toContain('Test Business');

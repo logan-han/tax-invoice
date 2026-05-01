@@ -1,0 +1,49 @@
+@media print {
+  @page {
+    size: A4;
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    margin: 0;
+    padding: 0;
+  }
+
+  .app {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+  }
+
+  .editor,
+  .preview-bar,
+  .view-preview-fab {
+    display: none !important;
+  }
+
+  .preview-pane {
+    position: static !important;
+    height: auto !important;
+    background: #ffffff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  .paper-wrap {
+    padding: 0 !important;
+  }
+
+  .paper-wrap > * {
+    transform: none !important;
+  }
+
+  .paper {
+    box-shadow: none !important;
+    width: 210mm !important;
+    min-height: 297mm !important;
+    margin: 0 auto !important;
+    padding: 14mm 14mm 10mm !important;
+  }
+}
