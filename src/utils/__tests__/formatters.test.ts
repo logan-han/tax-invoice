@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { formatABN, formatACN, formatBSB, formatPhoneNumber } from '../formatters';
+import { formatABN, formatACN, formatBSB, formatPhoneNumber, formatField } from '../formatters';
 
 describe('formatABN', () => {
   it('formats a valid 11-digit ABN', () => {
@@ -82,5 +82,26 @@ describe('formatPhoneNumber', () => {
   it('strips non-digit characters before formatting', () => {
     expect(formatPhoneNumber('0412-345-678')).toBe('0412 345 678');
     expect(formatPhoneNumber('(02) 1234 5678')).toBe('02 1234 5678');
+  });
+});
+
+describe('formatField', () => {
+  it('routes abn/acn/bsb/postcode/phone to their formatters', () => {
+    expect(formatField('abn', '12345678901')).toBe('12 345 678 901');
+    expect(formatField('acn', '123456789')).toBe('123 456 789');
+    expect(formatField('bsb', '123456')).toBe('123-456');
+    expect(formatField('postcode', '2000xx')).toBe('2000');
+    expect(formatField('phone', '0412345678')).toBe('0412 345 678');
+  });
+
+  it('truncates ABN/ACN/BSB to their maximum formatted length', () => {
+    expect(formatField('abn', '123456789012345')).toHaveLength(14);
+    expect(formatField('acn', '12345678901')).toHaveLength(11);
+    expect(formatField('bsb', '12345678')).toHaveLength(7);
+  });
+
+  it('returns the value untouched for unknown field names', () => {
+    expect(formatField('name', 'Acme Co')).toBe('Acme Co');
+    expect(formatField('email', 'a@b.c')).toBe('a@b.c');
   });
 });
