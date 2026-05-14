@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, memo, type ChangeEvent } from 'react';
-import { formatABN, formatACN, formatBSB, formatPhoneNumber } from '../utils/formatters';
+import { formatField } from '../utils/formatters';
 import { AUSTRALIAN_STATES } from '../utils/constants';
+import { parseAddressFromPlace } from '../utils/address';
 import AddressAutocomplete from './AddressAutocomplete';
 import Section from './ui/Section';
 import Field from './ui/Field';
@@ -52,46 +53,13 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
 
   const handlePlaceSelected = useCallback(
     (place: PlaceResult) => {
-      if (!place || !place.address_components) {
+      const address = parseAddressFromPlace(place);
+      if (!address) {
         console.error('Place or address components not found:', place);
         return;
       }
-
-      interface AddressAccumulator {
-        street_number?: string;
-        route?: string;
-        suburb?: string;
-        state?: string;
-        postcode?: string;
-      }
-
-      const addressComponents = place.address_components.reduce<AddressAccumulator>(
-        (acc, component) => {
-          const types = component.types;
-          if (types.includes('street_number')) {
-            acc.street_number = component.long_name;
-          } else if (types.includes('route')) {
-            acc.route = component.long_name;
-          } else if (types.includes('locality')) {
-            acc.suburb = component.long_name;
-          } else if (types.includes('administrative_area_level_1')) {
-            acc.state = component.short_name;
-          } else if (types.includes('postal_code')) {
-            acc.postcode = component.long_name;
-          }
-          return acc;
-        },
-        {}
-      );
-
       setBusinessDetails((prev) => {
-        const next = {
-          ...prev,
-          street: `${addressComponents.street_number || ''} ${addressComponents.route || ''}`.trim(),
-          suburb: addressComponents.suburb || '',
-          state: addressComponents.state || '',
-          postcode: addressComponents.postcode || '',
-        };
+        const next = { ...prev, ...address };
         onChange(next);
         return next;
       });
@@ -102,18 +70,7 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const { name, value: v } = e.target;
-      let formattedValue = v;
-      if (name === 'abn') {
-        formattedValue = formatABN(v).slice(0, 14);
-      } else if (name === 'acn') {
-        formattedValue = formatACN(v).slice(0, 11);
-      } else if (name === 'bsb') {
-        formattedValue = formatBSB(v).slice(0, 7);
-      } else if (name === 'postcode') {
-        formattedValue = v.replace(/\D/g, '').slice(0, 4);
-      } else if (name === 'phone') {
-        formattedValue = formatPhoneNumber(v);
-      }
+      const formattedValue = formatField(name, v);
       setBusinessDetails((prev) => {
         const next = { ...prev, [name]: formattedValue };
         onChange(next);

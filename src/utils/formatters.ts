@@ -43,3 +43,14 @@ export const formatPhoneNumber = (value: string): string => {
   }
   return value;
 };
+
+const FIELD_FORMATTERS: Record<string, (v: string) => string> = {
+  abn: (v) => formatABN(v).slice(0, 14),
+  acn: (v) => formatACN(v).slice(0, 11),
+  bsb: (v) => formatBSB(v).slice(0, 7),
+  postcode: (v) => v.replace(/\D/g, '').slice(0, 4),
+  phone: (v) => formatPhoneNumber(v),
+};
+
+export const formatField = (name: string, value: string): string =>
+  FIELD_FORMATTERS[name]?.(value) ?? value;
