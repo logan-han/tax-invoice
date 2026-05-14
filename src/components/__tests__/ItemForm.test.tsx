@@ -329,4 +329,13 @@ describe('ItemForm', () => {
     // 2 * 100 * 1.1 = 220 (with +10% GST added)
     expect(screen.getAllByText('$220.00').length).toBeGreaterThan(0);
   });
+
+  it('computes totals for an inclusive-GST item by backing the GST out of the price', () => {
+    const items = [createItem({ name: 'Inc', quantity: 1, price: 110, gst: 'inclusive' })];
+    render(<ItemForm items={items} onChange={mockOnChange} />);
+
+    expect(screen.getAllByText('$100.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$10.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$110.00').length).toBeGreaterThan(0);
+  });
 });

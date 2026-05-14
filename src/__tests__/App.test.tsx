@@ -277,4 +277,112 @@ describe('App', () => {
       expect(businessValue.textContent).toContain('Test Business');
     });
   });
+
+  it('copies the share link to the clipboard and flips the button label', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalledWith('http://localhost/');
+      expect(screen.getByRole('button', { name: /link copied/i })).toBeInTheDocument();
+    });
+
+    await waitFor(
+      () => {
+        expect(screen.getByRole('button', { name: /copy share link/i })).toBeInTheDocument();
+      },
+      { timeout: 2500 }
+    );
+  });
+
+  it('silently swallows clipboard errors', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
+
+    await waitFor(() => {
+      expect(writeText).toHaveBeenCalled();
+    });
+    expect(screen.queryByRole('button', { name: /link copied/i })).not.toBeInTheDocument();
+  });
+
+  it('switches the active zoom level when a zoom button is clicked', () => {
+    render(<App />);
+    const zoomGroup = screen.getByRole('group', { name: 'Zoom' });
+    const buttons = zoomGroup.querySelectorAll('button');
+    expect(buttons.length).toBeGreaterThan(0);
+
+    fireEvent.click(screen.getByRole('button', { name: '150%' }));
+    expect(screen.getByRole('button', { name: '150%' })).toHaveClass('on');
+  });
+
+  it('logs and recovers when PDF generation throws', async () => {
+    const { generateInvoicePdf } = await import('../utils/generatePdf');
+    (generateInvoicePdf as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+      new Error('boom')
+    );
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    render(<App />);
+    fireEvent.click(screen.getByRole('button', { name: /generate pdf/i }));
+
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith('Error generating PDF:', expect.any(Error));
+    });
+
+    const button = screen.getByRole('button', { name: /generate pdf/i });
+    expect(button).not.toBeDisabled();
+    consoleSpy.mockRestore();
+  });
+
+  it('picks the smallest zoom on narrow viewports', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
+    render(<App />);
+    expect(screen.getByRole('button', { name: '55%' })).toHaveClass('on');
+  });
+
+  it('picks the largest default zoom on wide viewports', () => {
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600 });
+    render(<App />);
+    expect(screen.getByRole('button', { name: '100%' })).toHaveClass('on');
+  });
+
+  it('disables the Generate PDF button while generation is in progress', async () => {
+    const { generateInvoicePdf } = await import('../utils/generatePdf');
+    let resolveFn: () => void = () => {};
+    (generateInvoicePdf as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveFn = resolve;
+        })
+    );
+
+    render(<App />);
+    const button = screen.getByRole('button', { name: /generate pdf invoice/i });
+    fireEvent.click(button);
+
+    await waitFor(() => {
+      expect(button).toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'true');
+      expect(button).toHaveTextContent(/generating/i);
+    });
+
+    resolveFn();
+
+    await waitFor(() => {
+      expect(button).not.toBeDisabled();
+      expect(button).toHaveAttribute('aria-busy', 'false');
+    });
+  });
 });

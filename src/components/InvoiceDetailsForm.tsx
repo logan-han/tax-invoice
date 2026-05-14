@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, memo, type ChangeEvent } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo, type ChangeEvent } from 'react';
 import Section from './ui/Section';
 import Field from './ui/Field';
 import type { InvoiceDetails } from '../types';
@@ -42,15 +42,13 @@ const defaultNotesFor = (dueDate: string): string => {
 };
 
 const InvoiceDetailsForm = memo(function InvoiceDetailsForm({ onChange }: InvoiceDetailsFormProps) {
-  const [invoiceDate, setInvoiceDate] = useState('');
-  const [invoiceNumber, setInvoiceNumber] = useState('');
-  const [dueDate, setDueDate] = useState('');
-  const [currency, setCurrency] = useState('');
-  const [notes, setNotes] = useState('');
-  const [notesEdited, setNotesEdited] = useState(false);
-
-  useEffect(() => {
-    const queryParams = new URLSearchParams(window.location.search);
+  // Hydrate from the URL synchronously at first render so the auto-default-notes
+  // effect below sees the resolved dueDate instead of clobbering custom notes.
+  const initial = useMemo(() => {
+    const queryParams =
+      typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search)
+        : new URLSearchParams();
     const stored = queryParams.get('invoice');
     let parsed: Partial<InvoiceDetails> | null = null;
     if (stored) {
@@ -61,10 +59,8 @@ const InvoiceDetailsForm = memo(function InvoiceDetailsForm({ onChange }: Invoic
       }
     }
 
-    const date = new Date();
-    const dateString = parsed?.invoiceDate || date.toISOString().split('T')[0];
-    setInvoiceDate(dateString);
-    setInvoiceNumber(parsed?.invoiceNumber || `${dateString.replace(/-/g, '')}-0001`);
+    const dateString = parsed?.invoiceDate || new Date().toISOString().split('T')[0];
+    const invoiceNumber = parsed?.invoiceNumber || `${dateString.replace(/-/g, '')}-0001`;
 
     let due = parsed?.dueDate;
     if (!due) {
@@ -72,15 +68,25 @@ const InvoiceDetailsForm = memo(function InvoiceDetailsForm({ onChange }: Invoic
       dueDateObj.setDate(dueDateObj.getDate() + 30);
       due = dueDateObj.toISOString().split('T')[0];
     }
-    setDueDate(due);
-    setCurrency(parsed?.currency || '');
-    if (typeof parsed?.notes === 'string' && parsed.notes !== defaultNotesFor(due)) {
-      setNotes(parsed.notes);
-      setNotesEdited(true);
-    } else {
-      setNotes(defaultNotesFor(due));
-    }
+
+    const fallbackNotes = defaultNotesFor(due);
+    const hasCustomNotes = typeof parsed?.notes === 'string' && parsed.notes !== fallbackNotes;
+    return {
+      invoiceDate: dateString,
+      invoiceNumber,
+      dueDate: due,
+      currency: parsed?.currency || '',
+      notes: hasCustomNotes ? (parsed!.notes as string) : fallbackNotes,
+      notesEdited: hasCustomNotes,
+    };
   }, []);
+
+  const [invoiceDate, setInvoiceDate] = useState(initial.invoiceDate);
+  const [invoiceNumber, setInvoiceNumber] = useState(initial.invoiceNumber);
+  const [dueDate, setDueDate] = useState(initial.dueDate);
+  const [currency, setCurrency] = useState(initial.currency);
+  const [notes, setNotes] = useState(initial.notes);
+  const [notesEdited, setNotesEdited] = useState(initial.notesEdited);
 
   useEffect(() => {
     if (!notesEdited) {

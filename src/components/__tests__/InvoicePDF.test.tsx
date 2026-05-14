@@ -452,4 +452,106 @@ describe('InvoicePDF', () => {
     const formattedAmounts = screen.getAllByText('$12,345.67');
     expect(formattedAmounts.length).toBeGreaterThan(0);
   });
+
+  it('falls back to placeholders when business name and account name are empty', () => {
+    const minimalBusiness: BusinessDetails = {
+      name: '',
+      street: '',
+      suburb: '',
+      state: '',
+      postcode: '',
+      phone: '',
+      email: '',
+      abn: '',
+      acn: '',
+      accountName: '',
+      bsb: '',
+      accountNumber: '',
+    };
+
+    const { container } = render(
+      <InvoicePDF
+        businessDetails={minimalBusiness}
+        clientDetails={mockClientDetails}
+        items={mockItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="20250115-0001"
+        dueDate="2025-02-14"
+      />
+    );
+
+    const fromName = container.querySelector('.footerDetails .inv-party-name');
+    expect(fromName?.textContent).toBe('—');
+
+    const remit = container.querySelector('.inv-footer');
+    expect(remit?.textContent).toContain('—');
+    expect(remit?.textContent).toContain('Add BSB');
+  });
+
+  it('omits the client street line when only suburb/state/postcode are present', () => {
+    const clientNoStreet: ClientDetails = {
+      ...mockClientDetails,
+      street: '',
+    };
+
+    const { container } = render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={clientNoStreet}
+        items={mockItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="20250115-0001"
+        dueDate="2025-02-14"
+      />
+    );
+
+    const detail = container.querySelector('.clientDetails .inv-party-detail');
+    expect(detail?.textContent).not.toContain('456 Client St');
+    expect(detail?.textContent).toContain('Melbourne');
+  });
+
+  it('renders a placeholder description for unnamed line items', () => {
+    const namelessItems: InvoiceItem[] = [
+      { id: '1', name: '', quantity: 1, price: 10, gst: 'no' },
+    ];
+
+    render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={mockClientDetails}
+        items={namelessItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="20250115-0001"
+        dueDate="2025-02-14"
+      />
+    );
+
+    expect(screen.getByText('Item description')).toBeInTheDocument();
+  });
+
+  it('falls back to placeholder client name when missing', () => {
+    const anonymousClient: ClientDetails = {
+      name: '',
+      street: '',
+      suburb: '',
+      state: '',
+      postcode: '',
+      abn: '',
+      acn: '',
+    };
+
+    const { container } = render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={anonymousClient}
+        items={mockItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="20250115-0001"
+        dueDate="2025-02-14"
+      />
+    );
+
+    const billTo = container.querySelector('.clientDetails .inv-party-name');
+    expect(billTo?.textContent).toBe('Client name');
+  });
 });

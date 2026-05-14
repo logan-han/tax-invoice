@@ -263,4 +263,106 @@ describe('ClientDetailsForm', () => {
     expect(lastCall.state).toBe('');
     expect(lastCall.postcode).toBe('');
   });
+
+  it('auto-reveals manual address fields when value prop already has an address', () => {
+    render(
+      <ClientDetailsForm
+        onChange={mockOnChange}
+        value={{
+          name: 'Acme Pty Ltd',
+          street: '1 George St',
+          suburb: 'Sydney',
+          state: 'NSW',
+          postcode: '2000',
+          abn: '',
+          acn: '',
+        }}
+      />
+    );
+
+    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('Acme Pty Ltd');
+    expect((screen.getByLabelText('Street') as HTMLInputElement).value).toBe('1 George St');
+    expect((screen.getByLabelText('Suburb') as HTMLInputElement).value).toBe('Sydney');
+    expect((screen.getByLabelText('State') as HTMLSelectElement).value).toBe('NSW');
+    expect((screen.getByLabelText('Postcode') as HTMLInputElement).value).toBe('2000');
+  });
+
+  it('keeps manual fields hidden when value prop has no address yet', () => {
+    render(
+      <ClientDetailsForm
+        onChange={mockOnChange}
+        value={{
+          name: 'New Client',
+          street: '',
+          suburb: '',
+          state: '',
+          postcode: '',
+          abn: '',
+          acn: '',
+        }}
+      />
+    );
+
+    expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
+  });
+
+  it('does not update the URL when a controlled value prop is provided', () => {
+    render(
+      <ClientDetailsForm
+        onChange={mockOnChange}
+        value={{
+          name: '',
+          street: '',
+          suburb: '',
+          state: '',
+          postcode: '',
+          abn: '',
+          acn: '',
+        }}
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Client name'), {
+      target: { value: 'Controlled', name: 'name' },
+    });
+
+    expect(mockOnChange).toHaveBeenCalled();
+    expect(window.history.replaceState).not.toHaveBeenCalled();
+  });
+
+  it('updates from a changing value prop after mount', () => {
+    const { rerender } = render(
+      <ClientDetailsForm
+        onChange={mockOnChange}
+        value={{
+          name: 'First',
+          street: '',
+          suburb: '',
+          state: '',
+          postcode: '',
+          abn: '',
+          acn: '',
+        }}
+      />
+    );
+
+    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('First');
+
+    rerender(
+      <ClientDetailsForm
+        onChange={mockOnChange}
+        value={{
+          name: 'Second',
+          street: '',
+          suburb: '',
+          state: '',
+          postcode: '',
+          abn: '',
+          acn: '',
+        }}
+      />
+    );
+
+    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('Second');
+  });
 });

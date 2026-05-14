@@ -9,6 +9,10 @@ describe('InvoiceDetailsForm', () => {
     mockOnChange.mockClear();
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2025-01-15'));
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { search: '', href: 'http://localhost/' },
+    });
   });
 
   afterEach(() => {
@@ -155,5 +159,121 @@ describe('InvoiceDetailsForm', () => {
     fireEvent.change(currencySelect, { target: { value: 'JPY' } });
     lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
     expect(lastCall.currency).toBe('JPY');
+  });
+
+  it('seeds notes with the default payment line for the due date', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+    const notes = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    expect(notes.value).toBe('Payment due by 14 Feb 2025.');
+  });
+
+  it('refreshes the default notes when the due date changes', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const invoiceDateInput = screen.getByLabelText('Invoice date');
+    fireEvent.change(invoiceDateInput, { target: { value: '2025-03-15' } });
+
+    const notes = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    expect(notes.value).toBe('Payment due by 14 Apr 2025.');
+  });
+
+  it('marks notes as edited, reveals the reset button, and stops auto-syncing', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const notes = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    fireEvent.change(notes, { target: { value: 'Bank transfer only.' } });
+    expect(notes.value).toBe('Bank transfer only.');
+
+    fireEvent.change(screen.getByLabelText('Invoice date'), { target: { value: '2025-04-01' } });
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Bank transfer only.');
+
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+  });
+
+  it('Reset restores the default note for the current due date and re-enables auto-sync', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    const notes = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    fireEvent.change(notes, { target: { value: 'Custom note' } });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe(
+      'Payment due by 14 Feb 2025.'
+    );
+    expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Invoice date'), { target: { value: '2025-05-01' } });
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe(
+      'Payment due by 31 May 2025.'
+    );
+  });
+
+  it('falls back to generic notes when the due date is empty', () => {
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+    const dueDate = screen.getByLabelText('Due date');
+    fireEvent.change(dueDate, { target: { value: '' } });
+
+    const notes = screen.getByLabelText('Notes') as HTMLTextAreaElement;
+    expect(notes.value).toBe('Payment due within 30 days of invoice date.');
+  });
+
+  it('hydrates all fields from the invoice URL parameter, preserving custom notes', () => {
+    const invoice = {
+      invoiceDate: '2024-06-10',
+      invoiceNumber: 'INV-42',
+      dueDate: '2024-07-10',
+      currency: 'EUR',
+      notes: 'Net 30 — wire transfer.',
+    };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        search: `?invoice=${encodeURIComponent(JSON.stringify(invoice))}`,
+        href: 'http://localhost/',
+      },
+    });
+
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+
+    expect((screen.getByLabelText('Invoice date') as HTMLInputElement).value).toBe('2024-06-10');
+    expect((screen.getByLabelText('Invoice number') as HTMLInputElement).value).toBe('INV-42');
+    expect((screen.getByLabelText('Due date') as HTMLInputElement).value).toBe('2024-07-10');
+    expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('EUR');
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Net 30 — wire transfer.');
+    expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
+  });
+
+  it('does not mark notes as edited when the stored notes match the default for the due date', () => {
+    const invoice = {
+      invoiceDate: '2024-06-10',
+      invoiceNumber: 'INV-42',
+      dueDate: '2024-07-10',
+      currency: 'EUR',
+      notes: 'Payment due by 10 Jul 2024.',
+    };
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: {
+        search: `?invoice=${encodeURIComponent(JSON.stringify(invoice))}`,
+        href: 'http://localhost/',
+      },
+    });
+
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe(
+      'Payment due by 10 Jul 2024.'
+    );
+    expect(screen.queryByRole('button', { name: 'Reset' })).not.toBeInTheDocument();
+  });
+
+  it('ignores invalid JSON in the invoice URL parameter', () => {
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { search: '?invoice=not-json', href: 'http://localhost/' },
+    });
+
+    render(<InvoiceDetailsForm onChange={mockOnChange} />);
+    expect((screen.getByLabelText('Invoice date') as HTMLInputElement).value).toBe('2025-01-15');
   });
 });
