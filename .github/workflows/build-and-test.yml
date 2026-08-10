@@ -122,3 +122,12 @@ jobs:
           aws s3 sync build "s3://${{ secrets.AWS_S3_BUCKET }}" \
             --follow-symlinks \
             --delete
+
+      # Without this the new build sits in S3 while CloudFront serves the old
+      # index.html until the default TTL expires. Skipped until the variable is set.
+      - name: Invalidate CloudFront (optional)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id "${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}" \
+            --paths "/*"
