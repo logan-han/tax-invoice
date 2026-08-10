@@ -12,6 +12,19 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap" />
+    <!-- Google Analytics: production hosts only, so local dev and e2e runs stay out of the data -->
+    <script>
+        if (location.hostname.endsWith('han.life')) {
+            window.dataLayer = window.dataLayer || [];
+            window.gtag = function () { window.dataLayer.push(arguments); };
+            gtag('js', new Date());
+            gtag('config', 'G-CVEBFCXFSW');
+            var ga = document.createElement('script');
+            ga.async = true;
+            ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-CVEBFCXFSW';
+            document.head.appendChild(ga);
+        }
+    </script>
 </head>
 <body>
     <div id="root"></div>
