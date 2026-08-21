@@ -246,6 +246,15 @@ function App() {
               rel="noreferrer"
             >
               Source on GitHub
+            </a>{' '}
+            ·{' '}
+            <a
+              href="https://coffee.han.life"
+              style={{ color: 'var(--ink-2)' }}
+              target="_blank"
+              rel="noopener"
+            >
+              ☕ Buy me a coffee
             </a>
           </div>
         </div>
