@@ -249,7 +249,7 @@ function App() {
             </a>{' '}
             ·{' '}
             <a
-              href="https://coffee.han.life"
+              href="https://han.life/coffee"
               style={{ color: 'var(--ink-2)' }}
               target="_blank"
               rel="noopener"
