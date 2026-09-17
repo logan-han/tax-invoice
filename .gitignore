@@ -24,3 +24,6 @@ yarn-error.log*
 
 # Local agent/tool settings
 .claude/
+
+# Coverage
+/coverage/
