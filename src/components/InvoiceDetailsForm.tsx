@@ -9,20 +9,7 @@ interface InvoiceDetailsFormProps {
 
 const CURRENCIES = ['AUD', 'USD', 'EUR', 'GBP', 'JPY', 'CAD', 'NZD', 'CNY', 'INR', 'SGD'];
 
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const formatHumanDate = (iso: string): string => {
   if (!iso) return '';
@@ -36,9 +23,7 @@ const formatHumanDate = (iso: string): string => {
 
 const defaultNotesFor = (dueDate: string): string => {
   const formatted = formatHumanDate(dueDate);
-  return formatted
-    ? `Payment due by ${formatted}.`
-    : 'Payment due within 30 days of invoice date.';
+  return formatted ? `Payment due by ${formatted}.` : 'Payment due within 30 days of invoice date.';
 };
 
 const InvoiceDetailsForm = memo(function InvoiceDetailsForm({ onChange }: InvoiceDetailsFormProps) {
