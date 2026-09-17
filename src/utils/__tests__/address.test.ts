@@ -66,9 +66,7 @@ describe('parseAddressFromPlace', () => {
 
   it('trims a lone street_number when there is no route', () => {
     const result = parseAddressFromPlace({
-      address_components: [
-        { long_name: '7', short_name: '7', types: ['street_number'] },
-      ],
+      address_components: [{ long_name: '7', short_name: '7', types: ['street_number'] }],
     });
     expect(result?.street).toBe('7');
   });
