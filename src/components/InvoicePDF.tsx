@@ -12,20 +12,7 @@ interface InvoicePDFProps {
   notes?: string;
 }
 
-const MONTHS = [
-  'Jan',
-  'Feb',
-  'Mar',
-  'Apr',
-  'May',
-  'Jun',
-  'Jul',
-  'Aug',
-  'Sep',
-  'Oct',
-  'Nov',
-  'Dec',
-];
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const formatDate = (iso: string): string => {
   if (!iso) return '';
@@ -45,11 +32,8 @@ const formatCurrency = (amount: number): string => {
   return `${sign}$${str}`;
 };
 
-const joinAddrTail = (p: {
-  suburb?: string;
-  state?: string;
-  postcode?: string;
-}): string => [p.suburb, p.state, p.postcode].filter(Boolean).join(' ');
+const joinAddrTail = (p: { suburb?: string; state?: string; postcode?: string }): string =>
+  [p.suburb, p.state, p.postcode].filter(Boolean).join(' ');
 
 const InvoicePDF = memo(function InvoicePDF({
   businessDetails,
@@ -168,8 +152,7 @@ const InvoicePDF = memo(function InvoicePDF({
           {items.map((item) => {
             const unit = item.gst === 'inclusive' ? item.price / 1.1 : item.price;
             const amount = unit * item.quantity;
-            const gstTag =
-              item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '—';
+            const gstTag = item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '—';
             return (
               <tr key={item.id}>
                 <td>{item.name || <span className="placeholder">Item description</span>}</td>

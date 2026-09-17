@@ -98,15 +98,18 @@ const ClientDetailsForm = memo(function ClientDetailsForm({
     [emitChange]
   );
 
-  const handleChange = useCallback((e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    const formattedValue = formatField(name, value);
-    setClientDetails((prev) => {
-      const next = { ...prev, [name]: formattedValue };
-      emitChange(next);
-      return next;
-    });
-  }, [emitChange]);
+  const handleChange = useCallback(
+    (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      const formattedValue = formatField(name, value);
+      setClientDetails((prev) => {
+        const next = { ...prev, [name]: formattedValue };
+        emitChange(next);
+        return next;
+      });
+    },
+    [emitChange]
+  );
 
   const toggleManualFields = useCallback(() => {
     setShowManualFields((prev) => !prev);

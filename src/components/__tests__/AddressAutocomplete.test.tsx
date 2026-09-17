@@ -54,12 +54,7 @@ describe('AddressAutocomplete', () => {
   });
 
   it('uses default aria-label when no placeholder provided', () => {
-    render(
-      <AddressAutocomplete
-        id="test-autocomplete"
-        onPlaceSelected={mockOnPlaceSelected}
-      />
-    );
+    render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
     const container = screen.getByLabelText('Address autocomplete');
     expect(container).toBeInTheDocument();
@@ -79,12 +74,7 @@ describe('AddressAutocomplete', () => {
   });
 
   it('renders with correct styles', () => {
-    render(
-      <AddressAutocomplete
-        id="test-autocomplete"
-        onPlaceSelected={mockOnPlaceSelected}
-      />
-    );
+    render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
     const container = screen.getByLabelText('Address autocomplete');
     expect(container).toHaveStyle({ padding: '0px', borderStyle: 'none' });
@@ -106,18 +96,10 @@ describe('AddressAutocomplete', () => {
   it('updates callback ref when onPlaceSelected changes', () => {
     const newCallback = vi.fn();
     const { rerender } = render(
-      <AddressAutocomplete
-        id="test-autocomplete"
-        onPlaceSelected={mockOnPlaceSelected}
-      />
+      <AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />
     );
 
-    rerender(
-      <AddressAutocomplete
-        id="test-autocomplete"
-        onPlaceSelected={newCallback}
-      />
-    );
+    rerender(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={newCallback} />);
 
     // Component should not error when callback changes
     expect(screen.getByLabelText('Address autocomplete')).toBeInTheDocument();
@@ -125,10 +107,7 @@ describe('AddressAutocomplete', () => {
 
   it('cleans up on unmount without errors', () => {
     const { unmount } = render(
-      <AddressAutocomplete
-        id="test-autocomplete"
-        onPlaceSelected={mockOnPlaceSelected}
-      />
+      <AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />
     );
 
     // Should not throw when unmounting
@@ -160,7 +139,9 @@ describe('AddressAutocomplete', () => {
         setAttribute: isolatedSetAttribute,
         addEventListener: vi.fn(),
       });
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return isolatedMock; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return isolatedMock;
+      });
 
       (window as unknown as { google: unknown }).google = {
         maps: {
@@ -170,12 +151,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -185,7 +161,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('initializes PlaceAutocompleteElement when Google Maps API is available', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
 
       (window as unknown as { google: unknown }).google = {
         maps: {
@@ -210,16 +188,14 @@ describe('AddressAutocomplete', () => {
       expect(mockPlaceAutocompleteConstructor).toHaveBeenCalledWith({
         includedRegionCodes: ['au'],
       });
-      expect(mockPlaceAutocomplete.setAttribute).toHaveBeenCalledWith('placeholder', 'Enter address');
+      expect(mockPlaceAutocomplete.setAttribute).toHaveBeenCalledWith(
+        'placeholder',
+        'Enter address'
+      );
     });
 
     it('retries initialization when Google Maps API is not yet loaded', async () => {
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       // First attempt - API not loaded
       await act(async () => {
@@ -227,7 +203,9 @@ describe('AddressAutocomplete', () => {
       });
 
       // Now load the API
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -258,7 +236,9 @@ describe('AddressAutocomplete', () => {
         location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -267,12 +247,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -289,7 +264,11 @@ describe('AddressAutocomplete', () => {
           { long_name: '123', short_name: '123', types: ['street_number'] },
           { long_name: 'Main St', short_name: 'Main St', types: ['route'] },
           { long_name: 'Sydney', short_name: 'Sydney', types: ['locality'] },
-          { long_name: 'New South Wales', short_name: 'NSW', types: ['administrative_area_level_1'] },
+          {
+            long_name: 'New South Wales',
+            short_name: 'NSW',
+            types: ['administrative_area_level_1'],
+          },
           { long_name: '2000', short_name: '2000', types: ['postal_code'] },
         ],
         geometry: {
@@ -299,7 +278,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles gmp-placeselect event without place', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -308,12 +289,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -331,16 +307,18 @@ describe('AddressAutocomplete', () => {
       const mockFetchFields = vi.fn().mockResolvedValue(undefined);
       const mockPlace = {
         fetchFields: mockFetchFields,
-        addressComponents: [
-          { longText: '456', shortText: '456', types: ['street_number'] },
-        ],
+        addressComponents: [{ longText: '456', shortText: '456', types: ['street_number'] }],
         location: null,
       };
       const mockPlacePrediction = {
-        toPlace: vi.fn(function () { return mockPlace; }),
+        toPlace: vi.fn(function () {
+          return mockPlace;
+        }),
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -349,12 +327,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -368,15 +341,15 @@ describe('AddressAutocomplete', () => {
       expect(mockPlacePrediction.toPlace).toHaveBeenCalled();
       expect(mockFetchFields).toHaveBeenCalled();
       expect(mockOnPlaceSelected).toHaveBeenCalledWith({
-        address_components: [
-          { long_name: '456', short_name: '456', types: ['street_number'] },
-        ],
+        address_components: [{ long_name: '456', short_name: '456', types: ['street_number'] }],
         geometry: undefined,
       });
     });
 
     it('handles gmp-select event without placePrediction', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -385,12 +358,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -405,7 +373,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('handles gmp-select event with placePrediction without toPlace function', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -414,12 +384,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -442,7 +407,9 @@ describe('AddressAutocomplete', () => {
         location: null,
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -451,12 +418,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -480,7 +442,9 @@ describe('AddressAutocomplete', () => {
         location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -489,12 +453,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -513,7 +472,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('adds autocomplete style to document head', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -522,12 +483,7 @@ describe('AddressAutocomplete', () => {
         },
       };
 
-      render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
-      );
+      render(<AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />);
 
       await act(async () => {
         vi.advanceTimersByTime(100);
@@ -538,7 +494,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('does not add duplicate styles', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -548,10 +506,7 @@ describe('AddressAutocomplete', () => {
       };
 
       render(
-        <AddressAutocomplete
-          id="test-autocomplete-1"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
+        <AddressAutocomplete id="test-autocomplete-1" onPlaceSelected={mockOnPlaceSelected} />
       );
 
       await act(async () => {
@@ -565,13 +520,12 @@ describe('AddressAutocomplete', () => {
         setAttribute: vi.fn(),
         addEventListener: vi.fn(),
       });
-      mockPlaceAutocompleteConstructor.mockImplementation(function () { return mockPlaceAutocomplete2; });
+      mockPlaceAutocompleteConstructor.mockImplementation(function () {
+        return mockPlaceAutocomplete2;
+      });
 
       render(
-        <AddressAutocomplete
-          id="test-autocomplete-2"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
+        <AddressAutocomplete id="test-autocomplete-2" onPlaceSelected={mockOnPlaceSelected} />
       );
 
       await act(async () => {
@@ -583,7 +537,9 @@ describe('AddressAutocomplete', () => {
     });
 
     it('cleans up autocomplete element on unmount', async () => {
-      const mockPlaceAutocompleteConstructor = vi.fn(function () { return mockPlaceAutocomplete; });
+      const mockPlaceAutocompleteConstructor = vi.fn(function () {
+        return mockPlaceAutocomplete;
+      });
       (window as unknown as { google: unknown }).google = {
         maps: {
           places: {
@@ -593,10 +549,7 @@ describe('AddressAutocomplete', () => {
       };
 
       const { unmount } = render(
-        <AddressAutocomplete
-          id="test-autocomplete"
-          onPlaceSelected={mockOnPlaceSelected}
-        />
+        <AddressAutocomplete id="test-autocomplete" onPlaceSelected={mockOnPlaceSelected} />
       );
 
       await act(async () => {

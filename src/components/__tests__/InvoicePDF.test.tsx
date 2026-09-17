@@ -511,9 +511,7 @@ describe('InvoicePDF', () => {
   });
 
   it('renders a placeholder description for unnamed line items', () => {
-    const namelessItems: InvoiceItem[] = [
-      { id: '1', name: '', quantity: 1, price: 10, gst: 'no' },
-    ];
+    const namelessItems: InvoiceItem[] = [{ id: '1', name: '', quantity: 1, price: 10, gst: 'no' }];
 
     render(
       <InvoicePDF

@@ -111,9 +111,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
       };
 
       placeAutocomplete.addEventListener('gmp-placeselect', async (event) => {
-        const place = event.place as
-          | google.maps.places.Place
-          | undefined;
+        const place = event.place as google.maps.places.Place | undefined;
         if (place) {
           await handlePlaceSelection(place);
         }
@@ -121,8 +119,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
 
       placeAutocomplete.addEventListener('gmp-select', async (event) => {
         const placePrediction = event.placePrediction as
-          | google.maps.places.PlacePrediction
-          | undefined;
+          google.maps.places.PlacePrediction | undefined;
         if (placePrediction && typeof placePrediction.toPlace === 'function') {
           const place = placePrediction.toPlace();
           await handlePlaceSelection(place);

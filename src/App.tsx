@@ -183,131 +183,128 @@ function App() {
 
   return (
     <div className="App app" data-accent="blue">
-        <div className="editor">
-          <div className="topbar topbar--actions-only">
-            <div className="topbar-actions">
-              <button type="button" className="btn ghost sm" onClick={handleCopyLink}>
-                {copyStatus === 'copied' ? I.check : I.copy}{' '}
-                {copyStatus === 'copied' ? 'Link copied' : 'Copy share link'}
-              </button>
-            </div>
-          </div>
-
-          <div className="editor-head">
-            <h1 className="editor-title">Australian Tax Invoice Generator</h1>
-            <p className="editor-sub">
-              Create professional tax invoices in minutes. Fill the fields on the left — your
-              invoice renders live on the right. Nothing is stored; your URL is the save file.
-            </p>
-          </div>
-
-          <BusinessDetailsForm
-            onChange={handleBusinessDetailsChange}
-            value={businessDetails}
-          />
-          <ClientDetailsForm onChange={handleClientDetailsChange} value={clientDetails} />
-          <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
-          <ItemForm items={items} onChange={handleItemsChange} />
-
-          <div
-            style={{
-              marginTop: 20,
-              display: 'flex',
-              gap: 8,
-              justifyContent: 'flex-end',
-              flexWrap: 'wrap',
-            }}
-          >
-            <button
-              type="button"
-              className="btn accent pdf-button"
-              onClick={handleGeneratePdf}
-              disabled={isGenerating}
-              aria-busy={isGenerating}
-              aria-label="Generate PDF invoice"
-            >
-              {I.download} {isGenerating ? 'Generating...' : 'Generate PDF'}
+      <div className="editor">
+        <div className="topbar topbar--actions-only">
+          <div className="topbar-actions">
+            <button type="button" className="btn ghost sm" onClick={handleCopyLink}>
+              {copyStatus === 'copied' ? I.check : I.copy}{' '}
+              {copyStatus === 'copied' ? 'Link copied' : 'Copy share link'}
             </button>
           </div>
+        </div>
 
+        <div className="editor-head">
+          <h1 className="editor-title">Australian Tax Invoice Generator</h1>
+          <p className="editor-sub">
+            Create professional tax invoices in minutes. Fill the fields on the left — your invoice
+            renders live on the right. Nothing is stored; your URL is the save file.
+          </p>
+        </div>
+
+        <BusinessDetailsForm onChange={handleBusinessDetailsChange} value={businessDetails} />
+        <ClientDetailsForm onChange={handleClientDetailsChange} value={clientDetails} />
+        <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
+        <ItemForm items={items} onChange={handleItemsChange} />
+
+        <div
+          style={{
+            marginTop: 20,
+            display: 'flex',
+            gap: 8,
+            justifyContent: 'flex-end',
+            flexWrap: 'wrap',
+          }}
+        >
+          <button
+            type="button"
+            className="btn accent pdf-button"
+            onClick={handleGeneratePdf}
+            disabled={isGenerating}
+            aria-busy={isGenerating}
+            aria-label="Generate PDF invoice"
+          >
+            {I.download} {isGenerating ? 'Generating...' : 'Generate PDF'}
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 40,
+            paddingTop: 20,
+            borderTop: '1px solid var(--line)',
+            color: 'var(--ink-3)',
+            fontSize: 11,
+          }}
+        >
+          Open source ·{' '}
+          <a
+            href="https://github.com/logan-han/tax-invoice"
+            style={{ color: 'var(--ink-2)' }}
+            rel="noreferrer"
+          >
+            Source on GitHub
+          </a>{' '}
+          ·{' '}
+          <a
+            href="https://han.life/coffee"
+            style={{ color: 'var(--ink-2)' }}
+            target="_blank"
+            rel="noopener"
+          >
+            ☕ Buy me a coffee
+          </a>
+        </div>
+      </div>
+
+      <div className="preview-pane">
+        <div className="preview-bar">
+          <span className="preview-label">Live preview · A4</span>
+          <div className="preview-zoom" role="group" aria-label="Zoom">
+            {ZOOM_LEVELS.map((z) => (
+              <button
+                key={z}
+                type="button"
+                className={zoom === z ? 'on' : ''}
+                onClick={() => setZoom(z)}
+              >
+                {Math.round(z * 100)}%
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="paper-wrap">
           <div
             style={{
-              marginTop: 40,
-              paddingTop: 20,
-              borderTop: '1px solid var(--line)',
-              color: 'var(--ink-3)',
-              fontSize: 11,
+              width: `${595 * zoom}px`,
+              height: `${842 * zoom}px`,
+              position: 'relative',
+              flexShrink: 0,
             }}
           >
-            Open source ·{' '}
-            <a
-              href="https://github.com/logan-han/tax-invoice"
-              style={{ color: 'var(--ink-2)' }}
-              rel="noreferrer"
-            >
-              Source on GitHub
-            </a>{' '}
-            ·{' '}
-            <a
-              href="https://han.life/coffee"
-              style={{ color: 'var(--ink-2)' }}
-              target="_blank"
-              rel="noopener"
-            >
-              ☕ Buy me a coffee
-            </a>
-          </div>
-        </div>
-
-        <div className="preview-pane">
-          <div className="preview-bar">
-            <span className="preview-label">Live preview · A4</span>
-            <div className="preview-zoom" role="group" aria-label="Zoom">
-              {ZOOM_LEVELS.map((z) => (
-                <button
-                  key={z}
-                  type="button"
-                  className={zoom === z ? 'on' : ''}
-                  onClick={() => setZoom(z)}
-                >
-                  {Math.round(z * 100)}%
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="paper-wrap">
             <div
               style={{
-                width: `${595 * zoom}px`,
-                height: `${842 * zoom}px`,
-                position: 'relative',
-                flexShrink: 0,
+                transform: `scale(${zoom})`,
+                transformOrigin: 'top left',
+                width: 595,
+                position: 'absolute',
+                top: 0,
+                left: 0,
               }}
             >
-              <div
-                style={{
-                  transform: `scale(${zoom})`,
-                  transformOrigin: 'top left',
-                  width: 595,
-                  position: 'absolute',
-                  top: 0,
-                  left: 0,
-                }}
-              >
-                <InvoicePDF
-                  businessDetails={businessDetails}
-                  clientDetails={clientDetails}
-                  items={items}
-                  invoiceDate={invoiceDetails.invoiceDate}
-                  invoiceNumber={invoiceDetails.invoiceNumber}
-                  dueDate={invoiceDetails.dueDate}
-                  currency={invoiceDetails.currency}
-                  notes={invoiceDetails.notes}
-                />
-              </div>
+              <InvoicePDF
+                businessDetails={businessDetails}
+                clientDetails={clientDetails}
+                items={items}
+                invoiceDate={invoiceDetails.invoiceDate}
+                invoiceNumber={invoiceDetails.invoiceNumber}
+                dueDate={invoiceDetails.dueDate}
+                currency={invoiceDetails.currency}
+                notes={invoiceDetails.notes}
+              />
             </div>
           </div>
         </div>
+      </div>
     </div>
   );
 }

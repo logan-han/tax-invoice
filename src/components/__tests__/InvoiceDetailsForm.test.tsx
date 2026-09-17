@@ -185,7 +185,9 @@ describe('InvoiceDetailsForm', () => {
     expect(notes.value).toBe('Bank transfer only.');
 
     fireEvent.change(screen.getByLabelText('Invoice date'), { target: { value: '2025-04-01' } });
-    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Bank transfer only.');
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe(
+      'Bank transfer only.'
+    );
 
     expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
   });
@@ -240,7 +242,9 @@ describe('InvoiceDetailsForm', () => {
     expect((screen.getByLabelText('Invoice number') as HTMLInputElement).value).toBe('INV-42');
     expect((screen.getByLabelText('Due date') as HTMLInputElement).value).toBe('2024-07-10');
     expect((screen.getByLabelText('Currency') as HTMLSelectElement).value).toBe('EUR');
-    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe('Net 30 — wire transfer.');
+    expect((screen.getByLabelText('Notes') as HTMLTextAreaElement).value).toBe(
+      'Net 30 — wire transfer.'
+    );
     expect(screen.getByRole('button', { name: 'Reset' })).toBeInTheDocument();
   });
 
