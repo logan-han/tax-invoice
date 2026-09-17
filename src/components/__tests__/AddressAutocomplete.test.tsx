@@ -87,7 +87,7 @@ describe('AddressAutocomplete', () => {
     );
 
     const container = screen.getByLabelText('Address autocomplete');
-    expect(container).toHaveStyle({ padding: '0px', border: 'none' });
+    expect(container).toHaveStyle({ padding: '0px', borderStyle: 'none' });
   });
 
   it('accepts all required props', () => {
