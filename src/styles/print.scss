@@ -1,3 +1,4 @@
+// Print (and the browser's "Save as PDF") gets the invoice alone, as vector text.
 @media print {
   @page {
     size: A4;
@@ -18,12 +19,13 @@
   }
 
   .editor,
-  .preview-bar,
-  .view-preview-fab {
+  .preview-bar {
     display: none !important;
   }
 
-  .preview-pane {
+  .preview-pane,
+  .paper-wrap {
+    display: block !important;
     position: static !important;
     height: auto !important;
     background: #ffffff !important;
@@ -31,19 +33,33 @@
     overflow: visible !important;
   }
 
-  .paper-wrap {
-    padding: 0 !important;
-  }
-
-  .paper-wrap > * {
+  // Undo the on-screen zoom wrappers' inline size, position and scale.
+  .paper-wrap > div,
+  .paper-wrap > div > div {
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
     transform: none !important;
   }
 
+  [data-placeholder] {
+    visibility: hidden !important;
+  }
+
+  // The paper is drawn 595px wide, A4 at 72dpi. Zoom it to the full 210mm so print matches
+  // the preview and the PDF download, with 11px text printing at 11pt.
   .paper {
+    zoom: calc(210 / 25.4 * 96 / 595);
+    min-height: 0;
+    margin: 0 !important;
     box-shadow: none !important;
-    width: 210mm !important;
-    min-height: 297mm !important;
-    margin: 0 auto !important;
-    padding: 14mm 14mm 10mm !important;
+    border-radius: 0;
+    background: #ffffff !important;
+  }
+
+  .inv-table tr,
+  .inv-totals,
+  .inv-footer {
+    break-inside: avoid;
   }
 }

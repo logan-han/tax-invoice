@@ -6,6 +6,9 @@ const { html2canvasMock, jsPDFCtor, jsPDFInstances, nextImgProps } = vi.hoisted(
     internal: { pageSize: { getWidth: () => number; getHeight: () => number } };
     addImage: ReturnType<typeof vi.fn>;
     addPage: ReturnType<typeof vi.fn>;
+    setProperties: ReturnType<typeof vi.fn>;
+    getNumberOfPages: ReturnType<typeof vi.fn>;
+    setFont: ReturnType<typeof vi.fn>;
     save: ReturnType<typeof vi.fn>;
   }> = [];
   const nextImgProps: { value: { width: number; height: number } } = {
@@ -22,6 +25,9 @@ const { html2canvasMock, jsPDFCtor, jsPDFInstances, nextImgProps } = vi.hoisted(
       },
       addImage: vi.fn(),
       addPage: vi.fn(),
+      setProperties: vi.fn(),
+      getNumberOfPages: vi.fn(() => 1),
+      setFont: vi.fn(),
       save: vi.fn(),
     };
     instances.push(inst);
@@ -147,5 +153,54 @@ describe('generateInvoicePdf', () => {
     expect(editor.style.backgroundColor).toBe('rgb(255, 255, 255)');
     expect(editor.style.backgroundImage).toBe('none');
     expect(editor.style.color).toBe('rgb(43, 46, 56)');
+  });
+
+  it('captures the paper without the preview zoom', async () => {
+    html2canvasMock.mockResolvedValue(buildCanvas());
+    await generateInvoicePdf('zoom');
+
+    const opts = html2canvasMock.mock.calls[0][1];
+    const cloneDoc = document.implementation.createHTMLDocument('test');
+    cloneDoc.body.innerHTML =
+      '<div class="paper-scale" style="transform: scale(0.55)"><div id="invoice"></div></div>';
+    opts.onclone(cloneDoc);
+
+    expect(cloneDoc.querySelector<HTMLElement>('.paper-scale')?.style.transform).toBe('none');
+  });
+
+  it('leaves editor placeholders out of the captured invoice', async () => {
+    html2canvasMock.mockResolvedValue(buildCanvas());
+    await generateInvoicePdf('placeholders');
+
+    const opts = html2canvasMock.mock.calls[0][1];
+    const cloneDoc = document.implementation.createHTMLDocument('test');
+    cloneDoc.body.innerHTML =
+      '<div id="invoice"><p>ACME</p><p data-placeholder="">Add BSB &amp; account</p></div>';
+    opts.onclone(cloneDoc);
+
+    const hint = cloneDoc.querySelector<HTMLElement>('[data-placeholder]');
+    expect(hint?.style.visibility).toBe('hidden');
+    expect(cloneDoc.querySelector<HTMLElement>('#invoice p')?.style.visibility).toBe('');
+  });
+
+  it('titles the PDF after the invoice and credits the business', async () => {
+    html2canvasMock.mockResolvedValue(buildCanvas());
+    await generateInvoicePdf('INV-7', 'Acme Pty Ltd');
+
+    expect(jsPDFInstances[0].setProperties).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Invoice INV-7', author: 'Acme Pty Ltd' })
+    );
+  });
+
+  it('makes the file name safe and never empty', async () => {
+    html2canvasMock.mockResolvedValue(buildCanvas());
+    await generateInvoicePdf('2026/10 #3');
+    await generateInvoicePdf('  ');
+
+    expect(jsPDFInstances[0].save).toHaveBeenCalledWith('invoice-2026-10-#3.pdf');
+    expect(jsPDFInstances[1].save).toHaveBeenCalledWith('invoice-draft.pdf');
+    expect(jsPDFInstances[1].setProperties).toHaveBeenCalledWith(
+      expect.objectContaining({ title: 'Invoice' })
+    );
   });
 });

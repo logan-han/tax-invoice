@@ -1,9 +1,10 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import BusinessDetailsForm from '../BusinessDetailsForm';
 import type { BusinessDetails } from '../../types';
 
-// Mock AddressAutocomplete component
+// Stands in for the Google widget: typing a trigger word "selects" a place.
 vi.mock('../AddressAutocomplete', () => ({
   default: ({
     onPlaceSelected,
@@ -25,7 +26,11 @@ vi.mock('../AddressAutocomplete', () => ({
               { long_name: '123', short_name: '123', types: ['street_number'] },
               { long_name: 'Main St', short_name: 'Main St', types: ['route'] },
               { long_name: 'Sydney', short_name: 'Sydney', types: ['locality'] },
-              { long_name: 'NSW', short_name: 'NSW', types: ['administrative_area_level_1'] },
+              {
+                long_name: 'New South Wales',
+                short_name: 'NSW',
+                types: ['administrative_area_level_1'],
+              },
               { long_name: '2000', short_name: '2000', types: ['postal_code'] },
             ],
           });
@@ -33,48 +38,59 @@ vi.mock('../AddressAutocomplete', () => ({
           onPlaceSelected(null);
         } else if (e.target.value === 'trigger-no-components') {
           onPlaceSelected({});
-        } else if (e.target.value === 'trigger-partial') {
-          onPlaceSelected({
-            address_components: [
-              { long_name: '456', short_name: '456', types: ['street_number'] },
-              { long_name: 'Test Ave', short_name: 'Test Ave', types: ['route'] },
-            ],
-          });
         }
       }}
     />
   ),
 }));
 
-describe('BusinessDetailsForm', () => {
-  const mockOnChange = vi.fn();
+const emptyBusiness: BusinessDetails = {
+  name: '',
+  street: '',
+  suburb: '',
+  state: '',
+  postcode: '',
+  phone: '',
+  email: '',
+  abn: '',
+  acn: '',
+  accountName: '',
+  bsb: '',
+  accountNumber: '',
+};
 
-  const emptyBusinessDetails: BusinessDetails = {
-    name: '',
-    street: '',
-    suburb: '',
-    state: '',
-    postcode: '',
-    phone: '',
-    email: '',
-    abn: '',
-    acn: '',
-    accountName: '',
-    bsb: '',
-    accountNumber: '',
-  };
+// Holds the value like App does, merging each patch the form sends.
+function Harness({
+  initial = emptyBusiness,
+  onChange,
+}: {
+  initial?: BusinessDetails;
+  onChange: (patch: Partial<BusinessDetails>) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <BusinessDetailsForm
+      value={value}
+      onChange={(patch) => {
+        onChange(patch);
+        setValue((prev) => ({ ...prev, ...patch }));
+      }}
+    />
+  );
+}
+
+describe('BusinessDetailsForm', () => {
+  const onChange = vi.fn();
 
   beforeEach(() => {
-    mockOnChange.mockClear();
-    Object.defineProperty(window, 'location', {
-      value: { search: '', href: 'http://localhost/' },
-      writable: true,
-    });
-    window.history.replaceState = vi.fn();
+    onChange.mockClear();
   });
 
+  const type = (label: string, value: string) =>
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+
   it('renders the form with all fields', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+    render(<Harness onChange={onChange} />);
 
     expect(screen.getByLabelText('Business name')).toBeInTheDocument();
     expect(screen.getByLabelText('Phone')).toBeInTheDocument();
@@ -86,252 +102,147 @@ describe('BusinessDetailsForm', () => {
     expect(screen.getByLabelText('Account number')).toBeInTheDocument();
   });
 
-  it('calls onChange when business name is entered', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+  it('sends only the field that changed', () => {
+    render(<Harness onChange={onChange} />);
+    type('Business name', 'Acme Pty Ltd');
 
-    const nameInput = screen.getByLabelText('Business name');
-    fireEvent.change(nameInput, { target: { value: 'Test Business', name: 'name' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.name).toBe('Test Business');
+    expect(onChange).toHaveBeenCalledWith({ name: 'Acme Pty Ltd' });
+    expect(screen.getByLabelText('Business name')).toHaveValue('Acme Pty Ltd');
   });
 
-  it('formats ABN correctly', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const abnInput = screen.getByLabelText('ABN') as HTMLInputElement;
-    fireEvent.change(abnInput, { target: { value: '12345678901', name: 'abn' } });
-
-    expect(abnInput.value).toBe('12 345 678 901');
+  it.each([
+    ['ABN', '51824753556', '51 824 753 556'],
+    ['ACN', '000000019', '000 000 019'],
+    ['BSB', '063000', '063-000'],
+    ['Phone', '0412345678', '0412 345 678'],
+    ['Account number', '12345678', '12345678'],
+  ])('formats %s as it is typed', (label, typed, shown) => {
+    render(<Harness onChange={onChange} />);
+    type(label, typed);
+    expect(screen.getByLabelText(label)).toHaveValue(shown);
   });
 
-  it('formats ACN correctly', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+  it('flags an ABN that fails the ATO check', () => {
+    render(<Harness onChange={onChange} />);
+    type('ABN', '12345678901');
 
-    const acnInput = screen.getByLabelText('ACN') as HTMLInputElement;
-    fireEvent.change(acnInput, { target: { value: '123456789', name: 'acn' } });
-
-    expect(acnInput.value).toBe('123 456 789');
+    const abn = screen.getByLabelText('ABN');
+    expect(screen.getByText('Not a valid ABN')).toBeInTheDocument();
+    expect(abn).toHaveAttribute('aria-invalid', 'true');
+    expect(abn).toHaveAccessibleDescription('Not a valid ABN');
   });
 
-  it('formats BSB correctly', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+  it('accepts a valid ABN and keeps the digit hint', () => {
+    render(<Harness onChange={onChange} />);
+    type('ABN', '51824753556');
 
-    const bsbInput = screen.getByLabelText('BSB') as HTMLInputElement;
-    fireEvent.change(bsbInput, { target: { value: '123456', name: 'bsb' } });
-
-    expect(bsbInput.value).toBe('123-456');
+    expect(screen.queryByText('Not a valid ABN')).not.toBeInTheDocument();
+    expect(screen.getByText('11 digits')).toBeInTheDocument();
+    expect(screen.getByLabelText('ABN')).not.toHaveAttribute('aria-invalid');
   });
 
-  it('formats phone number correctly', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const phoneInput = screen.getByLabelText('Phone') as HTMLInputElement;
-    fireEvent.change(phoneInput, { target: { value: '0412345678', name: 'phone' } });
-
-    expect(phoneInput.value).toBe('0412 345 678');
+  it('flags an ACN that fails the ASIC check', () => {
+    render(<Harness onChange={onChange} />);
+    type('ACN', '123456789');
+    expect(screen.getByText('Not a valid ACN')).toBeInTheDocument();
   });
 
-  it('restricts postcode to 4 digits', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const postcodeInput = screen.getByLabelText('Postcode') as HTMLInputElement;
-    fireEvent.change(postcodeInput, { target: { value: '200012', name: 'postcode' } });
-
-    expect(postcodeInput.value).toBe('2000');
+  it('shows the ABN in the section header', () => {
+    render(<Harness onChange={onChange} initial={{ ...emptyBusiness, abn: '51 824 753 556' }} />);
+    expect(screen.getByText('ABN 51 824 753 556')).toBeInTheDocument();
   });
 
-  it('shows manual entry fields when button is clicked', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
+  it('shows and hides the manual address fields', () => {
+    render(<Harness onChange={onChange} />);
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
     expect(screen.getByLabelText('Street')).toBeInTheDocument();
     expect(screen.getByLabelText('Suburb')).toBeInTheDocument();
     expect(screen.getByLabelText('State')).toBeInTheDocument();
     expect(screen.getByLabelText('Postcode')).toBeInTheDocument();
-  });
-
-  it('hides manual entry fields when button is clicked again', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-    expect(screen.getByLabelText('Street')).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /hide manual entry/i }));
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
   });
 
-  it('populates fields when place is selected from autocomplete', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+  it('edits the address by hand', () => {
+    render(<Harness onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-place' } });
+    type('Street', '1 George St');
+    type('Suburb', 'Brisbane');
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'QLD' } });
+    type('Postcode', '40001234');
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('123 Main St');
-    expect(lastCall.suburb).toBe('Sydney');
-    expect(lastCall.state).toBe('NSW');
-    expect(lastCall.postcode).toBe('2000');
+    expect(onChange).toHaveBeenCalledWith({ street: '1 George St' });
+    expect(onChange).toHaveBeenCalledWith({ suburb: 'Brisbane' });
+    expect(onChange).toHaveBeenCalledWith({ state: 'QLD' });
+    expect(screen.getByLabelText('Postcode')).toHaveValue('4000');
   });
 
-  it('does not reveal manual fields when place is selected from autocomplete', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
+  it('lists the Australian states and territories', () => {
+    render(<Harness onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-place' } });
+    const options = Array.from(screen.getByLabelText('State').querySelectorAll('option'));
+    expect(options.map((o) => o.value)).toEqual([
+      '',
+      'NSW',
+      'VIC',
+      'QLD',
+      'WA',
+      'SA',
+      'TAS',
+      'ACT',
+      'NT',
+    ]);
+  });
 
+  it('fills the address from a selected place without opening the manual fields', () => {
+    render(<Harness onChange={onChange} />);
+    fireEvent.change(screen.getByTestId('address-autocomplete'), {
+      target: { value: 'trigger-place' },
+    });
+
+    expect(onChange).toHaveBeenCalledWith({
+      street: '123 Main St',
+      suburb: 'Sydney',
+      state: 'NSW',
+      postcode: '2000',
+    });
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
   });
 
-  it('accepts value prop for controlled mode', () => {
-    const value: BusinessDetails = {
-      ...emptyBusinessDetails,
-      name: 'Controlled Business',
-      email: 'test@example.com',
-    };
+  it.each(['trigger-invalid', 'trigger-no-components'])(
+    'ignores a place without an address (%s)',
+    (trigger) => {
+      const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+      render(<Harness onChange={onChange} />);
+      fireEvent.change(screen.getByTestId('address-autocomplete'), {
+        target: { value: trigger },
+      });
 
-    render(<BusinessDetailsForm onChange={mockOnChange} value={value} />);
+      expect(onChange).not.toHaveBeenCalled();
+      expect(consoleError).toHaveBeenCalled();
+      consoleError.mockRestore();
+    }
+  );
 
-    expect(screen.getByLabelText('Business name')).toHaveValue('Controlled Business');
-    expect(screen.getByLabelText('Email')).toHaveValue('test@example.com');
-  });
-
-  it('updates when value prop changes', () => {
+  it('shows the values it is given', () => {
     const { rerender } = render(
-      <BusinessDetailsForm
-        onChange={mockOnChange}
-        value={{ ...emptyBusinessDetails, name: 'First' }}
-      />
+      <BusinessDetailsForm value={{ ...emptyBusiness, name: 'First' }} onChange={onChange} />
     );
-
     expect(screen.getByLabelText('Business name')).toHaveValue('First');
 
     rerender(
-      <BusinessDetailsForm
-        onChange={mockOnChange}
-        value={{ ...emptyBusinessDetails, name: 'Second' }}
-      />
+      <BusinessDetailsForm value={{ ...emptyBusiness, name: 'Second' }} onChange={onChange} />
     );
-
     expect(screen.getByLabelText('Business name')).toHaveValue('Second');
   });
 
-  it('shows manual fields when value has address data', () => {
-    const value: BusinessDetails = {
-      ...emptyBusinessDetails,
-      street: '123 Test St',
-    };
-
-    render(<BusinessDetailsForm onChange={mockOnChange} value={value} />);
-
-    expect(screen.getByLabelText('Street')).toBeInTheDocument();
-  });
-
-  it('has state dropdown with Australian states', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const stateSelect = screen.getByLabelText('State');
-    expect(stateSelect).toBeInTheDocument();
-
-    const options = stateSelect.querySelectorAll('option');
-    expect(options.length).toBe(9); // Empty + 8 states
-  });
-
-  it('handles invalid place selection gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-invalid' } });
-
-    expect(consoleSpy).toHaveBeenCalledWith('Place or address components not found:', null);
-    consoleSpy.mockRestore();
-  });
-
-  it('handles place without address_components gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-no-components' } });
-
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
-  });
-
-  it('handles partial address with missing components', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-partial' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('456 Test Ave');
-    expect(lastCall.suburb).toBe('');
-    expect(lastCall.state).toBe('');
-    expect(lastCall.postcode).toBe('');
-  });
-
-  it('allows changing state via dropdown', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const stateSelect = screen.getByLabelText('State');
-    fireEvent.change(stateSelect, { target: { value: 'QLD', name: 'state' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.state).toBe('QLD');
-  });
-
-  it('allows entering street manually', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const streetInput = screen.getByLabelText('Street');
-    fireEvent.change(streetInput, { target: { value: '789 Manual St', name: 'street' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('789 Manual St');
-  });
-
-  it('allows entering suburb manually', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const suburbInput = screen.getByLabelText('Suburb');
-    fireEvent.change(suburbInput, { target: { value: 'Brisbane', name: 'suburb' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.suburb).toBe('Brisbane');
-  });
-
-  it('allows entering account number', () => {
-    render(<BusinessDetailsForm onChange={mockOnChange} />);
-
-    const accountNumberInput = screen.getByLabelText('Account number');
-    fireEvent.change(accountNumberInput, {
-      target: { value: '12345678', name: 'accountNumber' },
-    });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.accountNumber).toBe('12345678');
+  it('opens the manual fields when it starts with an address', () => {
+    render(<Harness onChange={onChange} initial={{ ...emptyBusiness, street: '1 Test St' }} />);
+    expect(screen.getByLabelText('Street')).toHaveValue('1 Test St');
   });
 });

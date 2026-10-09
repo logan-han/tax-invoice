@@ -70,4 +70,15 @@ describe('parseAddressFromPlace', () => {
     });
     expect(result?.street).toBe('7');
   });
+
+  it('keeps the unit number, written the Australian way', () => {
+    const result = parseAddressFromPlace({
+      address_components: [
+        { long_name: '5', short_name: '5', types: ['subpremise'] },
+        { long_name: '123', short_name: '123', types: ['street_number'] },
+        { long_name: 'Example Street', short_name: 'Example St', types: ['route'] },
+      ],
+    });
+    expect(result?.street).toBe('5/123 Example Street');
+  });
 });

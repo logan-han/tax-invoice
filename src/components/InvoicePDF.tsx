@@ -1,4 +1,6 @@
 import { useMemo, memo, Fragment } from 'react';
+import { formatHumanDate } from '../utils/dates';
+import { calculateTotals, formatMoney, lineExGst } from '../utils/money';
 import type { BusinessDetails, ClientDetails, InvoiceItem } from '../types';
 
 interface InvoicePDFProps {
@@ -12,29 +14,10 @@ interface InvoicePDFProps {
   notes?: string;
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-const formatDate = (iso: string): string => {
-  if (!iso) return '';
-  const parts = iso.split('-');
-  if (parts.length !== 3) return iso;
-  const [y, m, d] = parts;
-  const monthIdx = parseInt(m, 10) - 1;
-  if (Number.isNaN(monthIdx) || monthIdx < 0 || monthIdx > 11) return iso;
-  return `${parseInt(d, 10)} ${MONTHS[monthIdx]} ${y}`;
-};
-
-const formatCurrency = (amount: number): string => {
-  const num = Number(amount) || 0;
-  const sign = num < 0 ? '-' : '';
-  const abs = Math.abs(num);
-  const str = abs.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-  return `${sign}$${str}`;
-};
-
 const joinAddrTail = (p: { suburb?: string; state?: string; postcode?: string }): string =>
   [p.suburb, p.state, p.postcode].filter(Boolean).join(' ');
 
+/** The A4 paper. Elements marked data-placeholder are editor hints, left out of the PDF and print. */
 const InvoicePDF = memo(function InvoicePDF({
   businessDetails,
   clientDetails,
@@ -45,26 +28,21 @@ const InvoicePDF = memo(function InvoicePDF({
   currency = '',
   notes = '',
 }: InvoicePDFProps) {
-  const { subtotal, gst, grandTotal } = useMemo(() => {
-    let sub = 0;
-    let gstSum = 0;
-    items.forEach((it) => {
-      const base = it.gst === 'inclusive' ? it.price / 1.1 : it.price;
-      sub += base * it.quantity;
-      if (it.gst === 'add') gstSum += it.price * it.quantity * 0.1;
-      else if (it.gst === 'inclusive') gstSum += it.price * it.quantity * (1 - 1 / 1.1);
-    });
-    return { subtotal: sub, gst: gstSum, grandTotal: sub + gstSum };
-  }, [items]);
+  const totals = useMemo(() => calculateTotals(items), [items]);
+  const money = (amount: number) => formatMoney(amount, currency);
 
   const hasBankDetails = Boolean(businessDetails.bsb && businessDetails.accountNumber);
-  const hasGst = gst > 0;
+  const hasRemittance = Boolean(businessDetails.accountName || hasBankDetails);
+  // Only GST-registered sellers may issue a tax invoice, so with no taxable lines it's an invoice.
+  const isTaxInvoice = items.some((item) => item.gst !== 'no');
 
   return (
     <div className="paper" id="invoice">
       <div className="inv-top">
         <div>
-          <div className="inv-brand-name">{businessDetails.name || 'Your business'}</div>
+          <div className="inv-brand-name">
+            {businessDetails.name || <span data-placeholder="">Your business</span>}
+          </div>
           <div className="inv-brand-meta">
             {businessDetails.street && <div>{businessDetails.street}</div>}
             {(businessDetails.suburb || businessDetails.state || businessDetails.postcode) && (
@@ -77,17 +55,17 @@ const InvoicePDF = memo(function InvoicePDF({
           </div>
         </div>
         <div className="inv-badge">
-          <div className="inv-badge-kicker">Tax Invoice</div>
+          <div className="inv-badge-kicker">{isTaxInvoice ? 'Tax Invoice' : 'Invoice'}</div>
           <div className="inv-badge-num">
             #<span>{invoiceNumber || '—'}</span>
           </div>
           <div className="inv-meta-grid">
             <span className="lbl">Issued</span>
-            <span>{formatDate(invoiceDate) || '—'}</span>
+            <span>{formatHumanDate(invoiceDate) || '—'}</span>
             {dueDate && (
               <Fragment>
-                <span className="lbl">Due Date:</span>
-                <span>{formatDate(dueDate)}</span>
+                <span className="lbl">Due</span>
+                <span>{formatHumanDate(dueDate)}</span>
               </Fragment>
             )}
             {currency && (
@@ -103,7 +81,9 @@ const InvoicePDF = memo(function InvoicePDF({
       <div className="inv-parties">
         <div className="clientDetails">
           <div className="inv-party-label">Bill to</div>
-          <div className="inv-party-name">{clientDetails.name || 'Client name'}</div>
+          <div className="inv-party-name">
+            {clientDetails.name || <span data-placeholder="">Client name</span>}
+          </div>
           <div className="inv-party-detail">
             {clientDetails.street && <div>{clientDetails.street}</div>}
             {(clientDetails.suburb || clientDetails.state || clientDetails.postcode) && (
@@ -144,24 +124,28 @@ const InvoicePDF = memo(function InvoicePDF({
         <tbody>
           {items.length === 0 && (
             <tr>
-              <td colSpan={5} className="empty">
+              <td colSpan={5} className="empty" data-placeholder="">
                 No items yet.
               </td>
             </tr>
           )}
           {items.map((item) => {
             const unit = item.gst === 'inclusive' ? item.price / 1.1 : item.price;
-            const amount = unit * item.quantity;
-            const gstTag = item.gst === 'add' || item.gst === 'inclusive' ? '10%' : '—';
             return (
               <tr key={item.id}>
-                <td>{item.name || <span className="placeholder">Item description</span>}</td>
-                <td className="num">{item.quantity}</td>
-                <td className="num">{formatCurrency(unit)}</td>
                 <td>
-                  <span className="gst-tag">{gstTag}</span>
+                  {item.name || (
+                    <span className="placeholder" data-placeholder="">
+                      Item description
+                    </span>
+                  )}
                 </td>
-                <td className="num">{formatCurrency(amount)}</td>
+                <td className="num">{item.quantity}</td>
+                <td className="num">{money(unit)}</td>
+                <td>
+                  <span className="gst-tag">{item.gst === 'no' ? '—' : '10%'}</span>
+                </td>
+                <td className="num">{money(lineExGst(item))}</td>
               </tr>
             );
           })}
@@ -171,35 +155,30 @@ const InvoicePDF = memo(function InvoicePDF({
       <div className="inv-totals">
         <table className="inv-totals-table">
           <tbody>
-            {hasGst ? (
+            {isTaxInvoice && (
               <Fragment>
                 <tr>
                   <td>Subtotal</td>
-                  <td className="num">{formatCurrency(subtotal)}</td>
+                  <td className="num">{money(totals.subtotal)}</td>
                 </tr>
                 <tr>
-                  <td>TOTAL GST(10%)</td>
-                  <td className="num">{formatCurrency(gst)}</td>
-                </tr>
-                <tr className="grand">
-                  <td>Total {currency}</td>
-                  <td className="num">{formatCurrency(grandTotal)}</td>
+                  <td>GST (10%)</td>
+                  <td className="num">{money(totals.gst)}</td>
                 </tr>
               </Fragment>
-            ) : (
-              <tr className="grand">
-                <td>Total {currency}</td>
-                <td className="num">{formatCurrency(grandTotal)}</td>
-              </tr>
             )}
+            <tr className="grand">
+              <td>Total {currency}</td>
+              <td className="num">{money(totals.total)}</td>
+            </tr>
           </tbody>
         </table>
       </div>
 
       <div className="inv-footer">
-        <div>
+        <div data-placeholder={hasRemittance ? undefined : ''}>
           <div className="bank-label">Remit to</div>
-          <div>{businessDetails.accountName || '—'}</div>
+          {businessDetails.accountName && <div>{businessDetails.accountName}</div>}
           {hasBankDetails ? (
             <Fragment>
               <div className="bank-label" style={{ marginTop: 10 }}>
@@ -213,7 +192,9 @@ const InvoicePDF = memo(function InvoicePDF({
               </div>
             </Fragment>
           ) : (
-            <div className="bank-missing">Add BSB &amp; account</div>
+            <div className="bank-missing" data-placeholder="">
+              Add BSB &amp; account
+            </div>
           )}
         </div>
         <div className="notes">

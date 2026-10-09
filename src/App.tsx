@@ -1,4 +1,4 @@
-import { useState, useCallback, memo } from 'react';
+import { useState, useCallback, useEffect, useRef, memo } from 'react';
 import BusinessDetailsForm from './components/BusinessDetailsForm';
 import ClientDetailsForm from './components/ClientDetailsForm';
 import ItemForm from './components/ItemForm';
@@ -6,180 +6,112 @@ import InvoicePDF from './components/InvoicePDF';
 import InvoiceDetailsForm from './components/InvoiceDetailsForm';
 import { I } from './utils/icons';
 import { generateInvoicePdf } from './utils/generatePdf';
+import { todayIso } from './utils/dates';
+import { readState, writeState, type InvoiceState } from './utils/urlState';
 import type { BusinessDetails, ClientDetails, InvoiceItem, InvoiceDetails } from './types';
-
-const safeJsonParse = <T,>(str: string | null, fallback: T): T => {
-  if (!str) return fallback;
-  try {
-    return JSON.parse(str) as T;
-  } catch {
-    console.warn('Failed to parse URL parameter');
-    return fallback;
-  }
-};
-
-const emptyClientDetails: ClientDetails = {
-  name: '',
-  street: '',
-  suburb: '',
-  state: '',
-  postcode: '',
-  abn: '',
-  acn: '',
-};
-
-const emptyInvoiceDetails: InvoiceDetails = {
-  invoiceDate: '',
-  invoiceNumber: '',
-  dueDate: '',
-  currency: '',
-  notes: '',
-};
-
-const getQueryParams = (): URLSearchParams => {
-  if (typeof window === 'undefined') return new URLSearchParams();
-  return new URLSearchParams(window.location.search);
-};
-
-const getInitialBusinessDetails = (): BusinessDetails => {
-  const queryParams = getQueryParams();
-  return {
-    name: queryParams.get('businessName') || '',
-    street: queryParams.get('businessStreet') || '',
-    suburb: queryParams.get('businessSuburb') || '',
-    state: queryParams.get('businessState') || '',
-    postcode: queryParams.get('businessPostcode') || '',
-    phone: queryParams.get('businessPhone') || '',
-    email: queryParams.get('businessEmail') || '',
-    abn: queryParams.get('businessAbn') || '',
-    acn: queryParams.get('businessAcn') || '',
-    accountName: queryParams.get('businessAccountName') || '',
-    bsb: queryParams.get('businessBsb') || '',
-    accountNumber: queryParams.get('businessAccountNumber') || '',
-  };
-};
-
-const getInitialClientDetails = (): ClientDetails => {
-  const queryParams = getQueryParams();
-  const legacyClient: ClientDetails = {
-    name: queryParams.get('clientName') || '',
-    street: queryParams.get('clientStreet') || '',
-    suburb: queryParams.get('clientSuburb') || '',
-    state: queryParams.get('clientState') || '',
-    postcode: queryParams.get('clientPostcode') || '',
-    abn: queryParams.get('clientAbn') || '',
-    acn: queryParams.get('clientAcn') || '',
-  };
-  return queryParams.has('client')
-    ? safeJsonParse<ClientDetails>(queryParams.get('client'), emptyClientDetails)
-    : legacyClient;
-};
-
-const getInitialItems = (): InvoiceItem[] => {
-  const queryParams = getQueryParams();
-  return safeJsonParse<InvoiceItem[]>(queryParams.get('items'), []);
-};
 
 const ZOOM_LEVELS = [0.55, 0.7, 0.85, 1, 1.5] as const;
 type ZoomLevel = (typeof ZOOM_LEVELS)[number];
 
+// Safari throws after 100 replaceState calls in 10 seconds, so the URL waits for a pause.
+const URL_WRITE_DELAY_MS = 300;
+
 const getInitialZoom = (): ZoomLevel => {
-  if (typeof window === 'undefined') return 0.85;
   if (window.innerWidth < 720) return 0.55;
   if (window.innerWidth < 1400) return 0.85;
   return 1;
 };
 
+const buildShareUrl = (state: InvoiceState): string => {
+  const url = new URL(window.location.href);
+  url.search = writeState(state, url.search);
+  return url.toString();
+};
+
 function App() {
-  const [businessDetails, setBusinessDetails] =
-    useState<BusinessDetails>(getInitialBusinessDetails);
-  const [clientDetails, setClientDetails] = useState<ClientDetails>(getInitialClientDetails);
-  const [items, setItems] = useState<InvoiceItem[]>(getInitialItems);
-  const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails>(emptyInvoiceDetails);
+  const [state, setState] = useState<InvoiceState>(() =>
+    readState(window.location.search, todayIso())
+  );
   const [zoom, setZoom] = useState<ZoomLevel>(getInitialZoom);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfFailed, setPdfFailed] = useState(false);
   const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
+  const copyTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  const updateUrl = useCallback(
-    (
-      business: BusinessDetails,
-      client: ClientDetails,
-      itemsList: InvoiceItem[],
-      invoice: InvoiceDetails
-    ) => {
-      const url = new URL(window.location.href);
-      url.searchParams.set('businessName', business.name);
-      url.searchParams.set('businessStreet', business.street);
-      url.searchParams.set('businessSuburb', business.suburb);
-      url.searchParams.set('businessState', business.state);
-      url.searchParams.set('businessPostcode', business.postcode);
-      url.searchParams.set('businessPhone', business.phone);
-      url.searchParams.set('businessEmail', business.email);
-      url.searchParams.set('businessAbn', business.abn);
-      url.searchParams.set('businessAcn', business.acn);
-      url.searchParams.set('businessAccountName', business.accountName);
-      url.searchParams.set('businessBsb', business.bsb);
-      url.searchParams.set('businessAccountNumber', business.accountNumber);
-      url.searchParams.set('client', JSON.stringify(client));
-      url.searchParams.set('items', JSON.stringify(itemsList));
-      url.searchParams.set('invoice', JSON.stringify(invoice));
-      window.history.replaceState({}, '', url);
-    },
-    []
-  );
+  // The URL is the save file: keep it in step with the form.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      try {
+        window.history.replaceState(window.history.state, '', buildShareUrl(state));
+      } catch {
+        // Rate limited; the next edit writes it again.
+      }
+    }, URL_WRITE_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [state]);
 
-  const handleBusinessDetailsChange = useCallback(
-    (details: BusinessDetails) => {
-      setBusinessDetails(details);
-      updateUrl(details, clientDetails, items, invoiceDetails);
-    },
-    [clientDetails, items, invoiceDetails, updateUrl]
-  );
+  useEffect(() => () => clearTimeout(copyTimer.current), []);
 
-  const handleClientDetailsChange = useCallback(
-    (details: ClientDetails) => {
-      setClientDetails(details);
-      updateUrl(businessDetails, details, items, invoiceDetails);
-    },
-    [businessDetails, items, invoiceDetails, updateUrl]
-  );
+  // "Save as PDF" in the print dialog names the file after the page title.
+  const invoiceNumber = state.invoice.invoiceNumber.trim();
+  useEffect(() => {
+    const original = document.title;
+    const rename = () => {
+      document.title = `invoice-${invoiceNumber || 'draft'}`;
+    };
+    const restore = () => {
+      document.title = original;
+    };
+    window.addEventListener('beforeprint', rename);
+    window.addEventListener('afterprint', restore);
+    return () => {
+      window.removeEventListener('beforeprint', rename);
+      window.removeEventListener('afterprint', restore);
+    };
+  }, [invoiceNumber]);
 
-  const handleItemsChange = useCallback(
-    (newItems: InvoiceItem[]) => {
-      setItems(newItems);
-      updateUrl(businessDetails, clientDetails, newItems, invoiceDetails);
-    },
-    [businessDetails, clientDetails, invoiceDetails, updateUrl]
-  );
+  const updateBusiness = useCallback((patch: Partial<BusinessDetails>) => {
+    setState((s) => ({ ...s, business: { ...s.business, ...patch } }));
+  }, []);
 
-  const handleInvoiceDetailsChange = useCallback(
-    (details: InvoiceDetails) => {
-      setInvoiceDetails(details);
-      updateUrl(businessDetails, clientDetails, items, details);
-    },
-    [businessDetails, clientDetails, items, updateUrl]
-  );
+  const updateClient = useCallback((patch: Partial<ClientDetails>) => {
+    setState((s) => ({ ...s, client: { ...s.client, ...patch } }));
+  }, []);
 
-  const handleGeneratePdf = useCallback(async () => {
+  const setInvoice = useCallback((invoice: InvoiceDetails) => {
+    setState((s) => ({ ...s, invoice }));
+  }, []);
+
+  const setItems = useCallback((items: InvoiceItem[]) => {
+    setState((s) => ({ ...s, items }));
+  }, []);
+
+  const handleGeneratePdf = async () => {
     setIsGenerating(true);
+    setPdfFailed(false);
     try {
-      await generateInvoicePdf(invoiceDetails.invoiceNumber);
+      await generateInvoicePdf(state.invoice.invoiceNumber, state.business.name);
     } catch (error) {
       console.error('Error generating PDF:', error);
+      setPdfFailed(true);
     } finally {
       setIsGenerating(false);
     }
-  }, [invoiceDetails.invoiceNumber]);
+  };
 
-  const handleCopyLink = useCallback(async () => {
+  const handleCopyLink = async () => {
+    if (!navigator.clipboard) return;
     try {
-      await navigator.clipboard?.writeText(window.location.href);
+      await navigator.clipboard.writeText(buildShareUrl(state));
       setCopyStatus('copied');
-      setTimeout(() => setCopyStatus('idle'), 1500);
+      clearTimeout(copyTimer.current);
+      copyTimer.current = setTimeout(() => setCopyStatus('idle'), 1500);
     } catch {
       /* ignore clipboard errors */
     }
-  }, []);
+  };
+
+  const { business, client, invoice, items } = state;
 
   return (
     <div className="App app" data-accent="blue">
@@ -201,20 +133,25 @@ function App() {
           </p>
         </div>
 
-        <BusinessDetailsForm onChange={handleBusinessDetailsChange} value={businessDetails} />
-        <ClientDetailsForm onChange={handleClientDetailsChange} value={clientDetails} />
-        <InvoiceDetailsForm onChange={handleInvoiceDetailsChange} />
-        <ItemForm items={items} onChange={handleItemsChange} />
+        <BusinessDetailsForm value={business} onChange={updateBusiness} />
+        <ClientDetailsForm value={client} onChange={updateClient} />
+        <InvoiceDetailsForm value={invoice} onChange={setInvoice} />
+        <ItemForm items={items} currency={invoice.currency} onChange={setItems} />
 
-        <div
-          style={{
-            marginTop: 20,
-            display: 'flex',
-            gap: 8,
-            justifyContent: 'flex-end',
-            flexWrap: 'wrap',
-          }}
-        >
+        <div className="editor-actions">
+          {pdfFailed && (
+            <p className="pdf-error" role="alert">
+              Couldn&apos;t create the PDF. Try again, or use Print and choose Save as PDF.
+            </p>
+          )}
+          <button
+            type="button"
+            className="btn"
+            onClick={() => window.print()}
+            title="Print, or choose Save as PDF for a PDF with selectable text"
+          >
+            {I.print} Print
+          </button>
           <button
             type="button"
             className="btn accent pdf-button"
@@ -227,30 +164,13 @@ function App() {
           </button>
         </div>
 
-        <div
-          style={{
-            marginTop: 40,
-            paddingTop: 20,
-            borderTop: '1px solid var(--line)',
-            color: 'var(--ink-3)',
-            fontSize: 11,
-          }}
-        >
+        <div className="editor-footer">
           Open source ·{' '}
-          <a
-            href="https://github.com/logan-han/tax-invoice"
-            style={{ color: 'var(--ink-2)' }}
-            rel="noreferrer"
-          >
+          <a href="https://github.com/logan-han/tax-invoice" rel="noreferrer">
             Source on GitHub
           </a>{' '}
           ·{' '}
-          <a
-            href="https://han.life/coffee"
-            style={{ color: 'var(--ink-2)' }}
-            target="_blank"
-            rel="noopener"
-          >
+          <a href="https://han.life/coffee" target="_blank" rel="noopener">
             ☕ Buy me a coffee
           </a>
         </div>
@@ -265,6 +185,7 @@ function App() {
                 key={z}
                 type="button"
                 className={zoom === z ? 'on' : ''}
+                aria-pressed={zoom === z}
                 onClick={() => setZoom(z)}
               >
                 {Math.round(z * 100)}%
@@ -282,6 +203,7 @@ function App() {
             }}
           >
             <div
+              className="paper-scale"
               style={{
                 transform: `scale(${zoom})`,
                 transformOrigin: 'top left',
@@ -292,14 +214,14 @@ function App() {
               }}
             >
               <InvoicePDF
-                businessDetails={businessDetails}
-                clientDetails={clientDetails}
+                businessDetails={business}
+                clientDetails={client}
                 items={items}
-                invoiceDate={invoiceDetails.invoiceDate}
-                invoiceNumber={invoiceDetails.invoiceNumber}
-                dueDate={invoiceDetails.dueDate}
-                currency={invoiceDetails.currency}
-                notes={invoiceDetails.notes}
+                invoiceDate={invoice.invoiceDate}
+                invoiceNumber={invoice.invoiceNumber}
+                dueDate={invoice.dueDate}
+                currency={invoice.currency}
+                notes={invoice.notes}
               />
             </div>
           </div>

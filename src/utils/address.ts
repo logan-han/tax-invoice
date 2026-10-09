@@ -12,6 +12,7 @@ export const parseAddressFromPlace = (
 ): NormalizedAddress | null => {
   if (!place || !place.address_components) return null;
 
+  let subpremise = '';
   let streetNumber = '';
   let route = '';
   let suburb = '';
@@ -20,15 +21,19 @@ export const parseAddressFromPlace = (
 
   for (const component of place.address_components) {
     const types = component.types;
-    if (types.includes('street_number')) streetNumber = component.long_name;
+    if (types.includes('subpremise')) subpremise = component.long_name;
+    else if (types.includes('street_number')) streetNumber = component.long_name;
     else if (types.includes('route')) route = component.long_name;
     else if (types.includes('locality')) suburb = component.long_name;
     else if (types.includes('administrative_area_level_1')) state = component.short_name;
     else if (types.includes('postal_code')) postcode = component.long_name;
   }
 
+  // Australian style for units: "5/123 Example St".
+  const number = [subpremise, streetNumber].filter(Boolean).join('/');
+
   return {
-    street: `${streetNumber} ${route}`.trim(),
+    street: `${number} ${route}`.trim(),
     suburb,
     state,
     postcode,

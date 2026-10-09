@@ -1,341 +1,302 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import ItemForm from '../ItemForm';
 import type { InvoiceItem } from '../../types';
 
-describe('ItemForm', () => {
-  const mockOnChange = vi.fn();
-  let testItemCounter = 0;
+const makeItem = (overrides: Partial<InvoiceItem> = {}): InvoiceItem => ({
+  id: overrides.id ?? `item-${Math.random()}`,
+  name: '',
+  quantity: 1,
+  price: 0,
+  gst: 'add',
+  ...overrides,
+});
 
-  const createItem = (overrides: Partial<InvoiceItem> = {}): InvoiceItem => ({
-    id: `test-${Date.now()}-${++testItemCounter}`,
-    name: '',
-    quantity: 1,
-    price: 0,
-    gst: 'no',
-    ...overrides,
-  });
+function Harness({
+  initial,
+  currency = '',
+  onChange,
+}: {
+  initial: InvoiceItem[];
+  currency?: string;
+  onChange: (items: InvoiceItem[]) => void;
+}) {
+  const [items, setItems] = useState(initial);
+  return (
+    <ItemForm
+      items={items}
+      currency={currency}
+      onChange={(next) => {
+        onChange(next);
+        setItems(next);
+      }}
+    />
+  );
+}
+
+const names = () =>
+  screen.getAllByPlaceholderText('Description').map((el) => (el as HTMLInputElement).value);
+
+const totalsRow = (label: string) =>
+  within(screen.getByLabelText('Totals')).getByText(label).nextElementSibling?.textContent;
+
+describe('ItemForm', () => {
+  const onChange = vi.fn();
 
   beforeEach(() => {
-    mockOnChange.mockClear();
-    testItemCounter = 0;
-    Object.defineProperty(window, 'location', {
-      value: { search: '', href: 'http://localhost/' },
-      writable: true,
-    });
-    window.history.replaceState = vi.fn();
+    onChange.mockClear();
   });
 
-  it('renders the form with items', () => {
-    const items = [createItem({ name: 'Test Item', quantity: 2, price: 100 })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    expect(screen.getByDisplayValue('Test Item')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('2')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('100')).toBeInTheDocument();
+  it('renders a row per item', () => {
+    render(
+      <Harness
+        onChange={onChange}
+        initial={[makeItem({ name: 'Design' }), makeItem({ name: 'Build' })]}
+      />
+    );
+    expect(names()).toEqual(['Design', 'Build']);
+    expect(screen.getByText('2 items')).toBeInTheDocument();
   });
 
-  it('shows Add item button', () => {
-    render(<ItemForm items={[createItem()]} onChange={mockOnChange} />);
-    expect(screen.getAllByRole('button', { name: /add/i }).length).toBeGreaterThan(0);
-  });
-
-  it('calls onChange when adding an item', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('adds a blank line from either add button', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ name: 'First' })]} />);
 
     fireEvent.click(screen.getByRole('button', { name: 'Add new invoice item' }));
+    fireEvent.click(screen.getByRole('button', { name: /add another item/i }));
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems.length).toBe(2);
+    expect(names()).toEqual(['First', '', '']);
+    const ids = onChange.mock.lastCall?.[0].map((i: InvoiceItem) => i.id);
+    expect(new Set(ids).size).toBe(3);
   });
 
-  it('shows remove button when multiple items exist', () => {
-    const items = [createItem(), createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('removes a line, but never the last one', () => {
+    render(
+      <Harness onChange={onChange} initial={[makeItem({ name: 'A' }), makeItem({ name: 'B' })]} />
+    );
 
-    const removeButtons = screen.getAllByRole('button', { name: /remove item/i });
-    expect(removeButtons.length).toBe(2);
-  });
-
-  it('does not show remove button when only one item exists', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
+    fireEvent.click(screen.getByRole('button', { name: 'Remove item 1' }));
+    expect(names()).toEqual(['B']);
     expect(screen.queryByRole('button', { name: /remove item/i })).not.toBeInTheDocument();
   });
 
-  it('calls onChange when removing an item', () => {
-    const items = [createItem({ name: 'Item 1' }), createItem({ name: 'Item 2' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    const removeButtons = screen.getAllByRole('button', { name: /remove item/i });
-    fireEvent.click(removeButtons[0]);
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems.length).toBe(1);
+  it('edits the description', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ id: 'a' })]} />);
+    fireEvent.change(screen.getByLabelText('Item 1 Description'), {
+      target: { value: 'Consulting' },
+    });
+    expect(onChange).toHaveBeenLastCalledWith([
+      expect.objectContaining({ id: 'a', name: 'Consulting' }),
+    ]);
   });
 
-  it('calls onChange when item name is changed', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('accepts fractional quantities such as hours', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ price: 100, gst: 'no' })]} />);
+    fireEvent.change(screen.getByLabelText('Item 1 Quantity'), { target: { value: '7.5' } });
 
-    const nameInput = screen.getByPlaceholderText('Description');
-    fireEvent.change(nameInput, { target: { value: 'New Item Name' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ quantity: 7.5 })]);
+    expect(screen.getAllByText('$750.00').length).toBeGreaterThan(0);
   });
 
-  it('calls onChange when quantity is changed', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    const qtyInput = screen.getByPlaceholderText('Qty');
-    fireEvent.change(qtyInput, { target: { value: '5' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
+  it('edits the price', () => {
+    render(<Harness onChange={onChange} initial={[makeItem()]} />);
+    fireEvent.change(screen.getByLabelText('Item 1 Price'), { target: { value: '99.95' } });
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ price: 99.95 })]);
   });
 
-  it('renders GST segmented control with three options', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('treats an empty or invalid number as zero but leaves the field empty while typing', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ quantity: 3, price: 10 })]} />);
+    const qty = screen.getByLabelText('Item 1 Quantity');
 
-    const tablist = screen.getByRole('tablist', { name: /item 1 gst/i });
-    expect(tablist).toBeInTheDocument();
+    fireEvent.change(qty, { target: { value: '' } });
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ quantity: 0 })]);
+    expect(qty).toHaveValue(null);
 
-    const tabs = within(tablist).getAllByRole('tab');
-    expect(tabs).toHaveLength(3);
-    expect(tabs[0]).toHaveTextContent('No');
-    expect(tabs[1]).toHaveTextContent('+10%');
-    expect(tabs[2]).toHaveTextContent('Incl.');
+    fireEvent.change(screen.getByLabelText('Item 1 Price'), { target: { value: 'abc' } });
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ price: 0 })]);
   });
 
-  it('calls onChange when GST selection changes', () => {
-    const items = [createItem({ gst: 'no' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('shows a zero price as an empty field once it loses focus', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ price: 5 })]} />);
+    const price = screen.getByLabelText('Item 1 Price');
 
-    const tablist = screen.getByRole('tablist', { name: /item 1 gst/i });
-    const inclusiveTab = within(tablist).getByRole('tab', { name: 'Incl.' });
-    fireEvent.click(inclusiveTab);
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems[0].gst).toBe('inclusive');
+    fireEvent.change(price, { target: { value: '0' } });
+    expect(price).toHaveValue(0);
+    fireEvent.blur(price);
+    expect(price).toHaveValue(null);
   });
 
-  it('marks current GST option as selected', () => {
-    const items = [createItem({ gst: 'add' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('switches GST mode with the segmented control', () => {
+    render(<Harness onChange={onChange} initial={[makeItem({ gst: 'add' })]} />);
+    const group = screen.getByRole('radiogroup', { name: 'Item 1 GST' });
+    const options = within(group).getAllByRole('radio');
 
-    const tablist = screen.getByRole('tablist', { name: /item 1 gst/i });
-    const addTab = within(tablist).getByRole('tab', { name: '+10%' });
-    expect(addTab).toHaveAttribute('aria-selected', 'true');
+    expect(options.map((o) => o.textContent)).toEqual(['No', '+10%', 'Incl.']);
+    expect(options[1]).toHaveAttribute('aria-checked', 'true');
+
+    fireEvent.click(options[2]);
+    expect(onChange).toHaveBeenLastCalledWith([expect.objectContaining({ gst: 'inclusive' })]);
+    expect(within(group).getByRole('radio', { name: 'Incl.' })).toHaveAttribute(
+      'aria-checked',
+      'true'
+    );
   });
 
-  it('calls onChange when price is changed', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
+  it('shows line amounts including GST and whole-cent totals', () => {
+    render(
+      <Harness
+        onChange={onChange}
+        initial={[
+          makeItem({ quantity: 5, price: 100, gst: 'add' }),
+          makeItem({ quantity: 1, price: 99, gst: 'inclusive' }),
+          makeItem({ quantity: 2, price: 10, gst: 'no' }),
+        ]}
+      />
+    );
 
-    const priceInput = screen.getByPlaceholderText('Price');
-    fireEvent.change(priceInput, { target: { value: '150', name: 'price' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems[0].price).toBe(150);
+    expect(screen.getByText('$550.00')).toBeInTheDocument();
+    expect(screen.getByText('$99.00')).toBeInTheDocument();
+    expect(screen.getByText('$20.00')).toBeInTheDocument();
+    expect(totalsRow('Subtotal')).toBe('$610.00');
+    expect(totalsRow('GST (10%)')).toBe('$59.00');
+    expect(totalsRow('Total')).toBe('$669.00');
   });
 
-  it('reads items from URL parameters on first load', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?itemName_0=URL+Item&itemQuantity_0=5&itemPrice_0=200&itemGst_0=add',
-        href: 'http://localhost/?itemName_0=URL+Item&itemQuantity_0=5&itemPrice_0=200&itemGst_0=add',
-      },
-      writable: true,
+  it('formats amounts in the chosen currency', () => {
+    render(
+      <Harness
+        onChange={onChange}
+        currency="EUR"
+        initial={[makeItem({ quantity: 1, price: 1000, gst: 'no' })]}
+      />
+    );
+    expect(totalsRow('Total')).toBe('€1,000.00');
+  });
+
+  describe('reordering', () => {
+    const threeItems = () => [
+      makeItem({ id: 'a', name: 'A' }),
+      makeItem({ id: 'b', name: 'B' }),
+      makeItem({ id: 'c', name: 'C' }),
+    ];
+
+    it('has no handle when there is nothing to reorder', () => {
+      render(<Harness onChange={onChange} initial={[makeItem()]} />);
+      expect(screen.queryByRole('button', { name: /reorder item/i })).not.toBeInTheDocument();
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('moves a line with the arrow keys and announces it', () => {
+      render(<Harness onChange={onChange} initial={threeItems()} />);
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[0][0];
-    expect(newItems[0].name).toBe('URL Item');
-    expect(newItems[0].quantity).toBe(5);
-    expect(newItems[0].price).toBe(200);
-    expect(newItems[0].gst).toBe('add');
-  });
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder item 1' }), {
+        key: 'ArrowDown',
+      });
+      expect(names()).toEqual(['B', 'A', 'C']);
+      expect(screen.getByText('Item moved to position 2 of 3')).toBeInTheDocument();
 
-  it('creates default item when items become empty', () => {
-    const { rerender } = render(<ItemForm items={[createItem()]} onChange={mockOnChange} />);
-
-    mockOnChange.mockClear();
-    rerender(<ItemForm items={[]} onChange={mockOnChange} />);
-
-    expect(mockOnChange).toHaveBeenCalled();
-  });
-
-  it('updates URL when items change', () => {
-    const items = [createItem({ name: 'Test Item' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    expect(window.history.replaceState).toHaveBeenCalled();
-  });
-
-  it('handles invalid quantity gracefully', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    const qtyInput = screen.getByPlaceholderText('Qty');
-    fireEvent.change(qtyInput, { target: { value: 'abc', name: 'quantity' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems[0].quantity).toBe(0);
-  });
-
-  it('handles invalid price gracefully', () => {
-    const items = [createItem()];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    const priceInput = screen.getByPlaceholderText('Price');
-    fireEvent.change(priceInput, { target: { value: 'abc', name: 'price' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems[0].price).toBe(0);
-  });
-
-  it('reads multiple items from URL parameters', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search:
-          '?itemName_0=Item+1&itemQuantity_0=1&itemPrice_0=100&itemGst_0=no&itemName_1=Item+2&itemQuantity_1=2&itemPrice_1=200&itemGst_1=add',
-        href: 'http://localhost/?itemName_0=Item+1&itemQuantity_0=1&itemPrice_0=100&itemGst_0=no&itemName_1=Item+2&itemQuantity_1=2&itemPrice_1=200&itemGst_1=add',
-      },
-      writable: true,
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder item 3' }), {
+        key: 'ArrowUp',
+      });
+      expect(names()).toEqual(['B', 'C', 'A']);
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('does nothing past either end or for other keys', () => {
+      render(<Harness onChange={onChange} initial={threeItems()} />);
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[0][0];
-    expect(newItems.length).toBe(2);
-    expect(newItems[0].name).toBe('Item 1');
-    expect(newItems[1].name).toBe('Item 2');
-  });
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder item 1' }), {
+        key: 'ArrowUp',
+      });
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder item 3' }), {
+        key: 'ArrowDown',
+      });
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Reorder item 2' }), { key: 'Enter' });
 
-  it('does not read from URL on subsequent renders', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?itemName_0=URL+Item',
-        href: 'http://localhost/?itemName_0=URL+Item',
-      },
-      writable: true,
+      expect(onChange).not.toHaveBeenCalled();
     });
 
-    const { rerender } = render(<ItemForm items={[]} onChange={mockOnChange} />);
-    mockOnChange.mockClear();
+    // Rows are 40px tall, stacked from y=0, in their current order.
+    const layOutRows = () =>
+      screen.getAllByRole('group', { name: /^Item \d$/ }).forEach((row, i) => {
+        row.getBoundingClientRect = () => ({ top: i * 40, height: 40 }) as DOMRect;
+      });
 
-    rerender(<ItemForm items={[createItem({ name: 'New Item' })]} onChange={mockOnChange} />);
+    it('drags a line past its neighbours', () => {
+      render(<Harness onChange={onChange} initial={threeItems()} />);
+      layOutRows();
 
-    const calls = mockOnChange.mock.calls;
-    const urlLoadCall = calls.find((call) => call[0]?.[0]?.name === 'URL Item');
-    expect(urlLoadCall).toBeUndefined();
-  });
+      const handle = screen.getByRole('button', { name: 'Reorder item 1' });
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientY: 20 });
+      expect(screen.getAllByRole('group', { name: /^Item \d$/ })[0]).toHaveClass('is-dragging');
 
-  it('uses default values for missing URL parameters', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?itemName_0=Minimal+Item',
-        href: 'http://localhost/?itemName_0=Minimal+Item',
-      },
-      writable: true,
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 50 });
+      expect(names()).toEqual(['A', 'B', 'C']); // not past the middle of B yet
+
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 65 });
+      expect(names()).toEqual(['B', 'A', 'C']);
+
+      layOutRows();
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 105 });
+      expect(names()).toEqual(['B', 'C', 'A']);
+
+      fireEvent.pointerUp(window, { pointerId: 1 });
+      expect(screen.getAllByRole('group', { name: /^Item \d$/ })[2]).not.toHaveClass('is-dragging');
+
+      layOutRows();
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 0 });
+      expect(names()).toEqual(['B', 'C', 'A']);
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('keeps dragging when moving the row drops pointer capture', () => {
+      const fourItems = [...threeItems(), makeItem({ id: 'd', name: 'D' })];
+      render(<Harness onChange={onChange} initial={fourItems} />);
+      layOutRows();
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[0][0];
-    expect(newItems[0].name).toBe('Minimal Item');
-    expect(newItems[0].quantity).toBe(1);
-    expect(newItems[0].price).toBe(0);
-    expect(newItems[0].gst).toBe('add');
-  });
+      const handle = screen.getByRole('button', { name: 'Reorder item 1' });
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientY: 20 });
+      for (const y of [65, 105, 145]) {
+        fireEvent.lostPointerCapture(handle, { pointerId: 1 });
+        fireEvent.pointerMove(window, { pointerId: 1, clientY: y });
+        layOutRows();
+      }
+      fireEvent.pointerUp(window, { pointerId: 1 });
 
-  it('handles invalid quantity in URL parameters', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?itemName_0=Item&itemQuantity_0=abc',
-        href: 'http://localhost/?itemName_0=Item&itemQuantity_0=abc',
-      },
-      writable: true,
+      expect(names()).toEqual(['B', 'C', 'D', 'A']);
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('waits for each step to render before taking the next', () => {
+      // A parent that never re-renders: only the first step can be taken.
+      render(<ItemForm items={threeItems()} currency="" onChange={onChange} />);
+      layOutRows();
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[0][0];
-    expect(newItems[0].quantity).toBe(1);
-  });
+      const handle = screen.getByRole('button', { name: 'Reorder item 1' });
+      fireEvent.pointerDown(handle, { button: 0, pointerId: 1, clientY: 20 });
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 65 });
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 105 });
 
-  it('handles invalid price in URL parameters', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?itemName_0=Item&itemPrice_0=invalid',
-        href: 'http://localhost/?itemName_0=Item&itemPrice_0=invalid',
-      },
-      writable: true,
+      expect(onChange).toHaveBeenCalledTimes(1);
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('stops listening once unmounted mid-drag', () => {
+      const { unmount } = render(<Harness onChange={onChange} initial={threeItems()} />);
+      layOutRows();
+      fireEvent.pointerDown(screen.getByRole('button', { name: 'Reorder item 1' }), {
+        button: 0,
+        pointerId: 1,
+      });
+      unmount();
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[0][0];
-    expect(newItems[0].price).toBe(0);
-  });
-
-  it('handles changing item name via input', () => {
-    const items = [createItem({ name: 'Original' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    const nameInput = screen.getByPlaceholderText('Description');
-    fireEvent.change(nameInput, { target: { value: 'Updated Name', name: 'name' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const newItems = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(newItems[0].name).toBe('Updated Name');
-  });
-
-  it('does not load from URL when no items in URL', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '',
-        href: 'http://localhost/',
-      },
-      writable: true,
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 200 });
+      expect(onChange).not.toHaveBeenCalled();
     });
 
-    render(<ItemForm items={[]} onChange={mockOnChange} />);
+    it('ignores drags that start with another mouse button', () => {
+      render(<Harness onChange={onChange} initial={threeItems()} />);
+      const handle = screen.getByRole('button', { name: 'Reorder item 1' });
 
-    const firstCall = mockOnChange.mock.calls[0][0];
-    expect(firstCall.length).toBe(1);
-    expect(firstCall[0].name).toBe('');
-  });
+      fireEvent.pointerDown(handle, { button: 2, pointerId: 1 });
+      fireEvent.pointerMove(window, { pointerId: 1, clientY: 500 });
 
-  it('shows computed line total for each item', () => {
-    const items = [createItem({ name: 'Test', quantity: 2, price: 100, gst: 'add' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    // 2 * 100 * 1.1 = 220 (with +10% GST added)
-    expect(screen.getAllByText('$220.00').length).toBeGreaterThan(0);
-  });
-
-  it('computes totals for an inclusive-GST item by backing the GST out of the price', () => {
-    const items = [createItem({ name: 'Inc', quantity: 1, price: 110, gst: 'inclusive' })];
-    render(<ItemForm items={items} onChange={mockOnChange} />);
-
-    expect(screen.getAllByText('$100.00').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('$10.00').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('$110.00').length).toBeGreaterThan(0);
+      expect(onChange).not.toHaveBeenCalled();
+    });
   });
 });

@@ -1,90 +1,32 @@
-import { useState, useEffect, useCallback, useRef, memo, type ChangeEvent } from 'react';
+import { useCallback, memo, type ChangeEvent } from 'react';
 import { formatField } from '../utils/formatters';
-import { AUSTRALIAN_STATES } from '../utils/constants';
-import { parseAddressFromPlace } from '../utils/address';
-import AddressAutocomplete from './AddressAutocomplete';
+import { identifierError } from '../utils/validators';
+import AddressFields from './AddressFields';
 import Section from './ui/Section';
 import Field from './ui/Field';
-import { I } from '../utils/icons';
-import type { BusinessDetails, PlaceResult } from '../types';
+import type { BusinessDetails } from '../types';
 
 interface BusinessDetailsFormProps {
-  onChange: (details: BusinessDetails) => void;
-  value?: BusinessDetails;
+  value: BusinessDetails;
+  /** Receives only the fields that changed. */
+  onChange: (patch: Partial<BusinessDetails>) => void;
 }
 
-const emptyBusinessDetails: BusinessDetails = {
-  name: '',
-  street: '',
-  suburb: '',
-  state: '',
-  postcode: '',
-  phone: '',
-  email: '',
-  abn: '',
-  acn: '',
-  accountName: '',
-  bsb: '',
-  accountNumber: '',
-};
-
 const BusinessDetailsForm = memo(function BusinessDetailsForm({
-  onChange,
   value,
+  onChange,
 }: BusinessDetailsFormProps) {
-  const [businessDetails, setBusinessDetails] = useState<BusinessDetails>(
-    value || emptyBusinessDetails
-  );
-  const [showManualFields, setShowManualFields] = useState(false);
-  const hasAppliedInitialValue = useRef(false);
-
-  useEffect(() => {
-    if (value) {
-      setBusinessDetails(value);
-      if (
-        !hasAppliedInitialValue.current &&
-        (value.street || value.suburb || value.state || value.postcode)
-      ) {
-        setShowManualFields(true);
-      }
-      hasAppliedInitialValue.current = true;
-    }
-  }, [value]);
-
-  const handlePlaceSelected = useCallback(
-    (place: PlaceResult) => {
-      const address = parseAddressFromPlace(place);
-      if (!address) {
-        console.error('Place or address components not found:', place);
-        return;
-      }
-      setBusinessDetails((prev) => {
-        const next = { ...prev, ...address };
-        onChange(next);
-        return next;
-      });
-    },
-    [onChange]
-  );
-
   const handleChange = useCallback(
     (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-      const { name, value: v } = e.target;
-      const formattedValue = formatField(name, v);
-      setBusinessDetails((prev) => {
-        const next = { ...prev, [name]: formattedValue };
-        onChange(next);
-        return next;
-      });
+      const { name, value: raw } = e.target;
+      onChange({ [name]: formatField(name, raw) });
     },
     [onChange]
   );
 
-  const toggleManualFields = useCallback(() => {
-    setShowManualFields((prev) => !prev);
-  }, []);
-
-  const meta = businessDetails.abn ? `ABN ${businessDetails.abn}` : 'Your details';
+  const abnError = identifierError('abn', value.abn);
+  const acnError = identifierError('acn', value.acn);
+  const meta = value.abn ? `ABN ${value.abn}` : 'Your details';
 
   return (
     <Section n={1} title="Your business" meta={meta}>
@@ -95,7 +37,7 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             className="input"
             type="text"
             name="name"
-            value={businessDetails.name}
+            value={value.name}
             onChange={handleChange}
           />
         </Field>
@@ -103,9 +45,9 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
           <input
             id="business-phone"
             className="input mono"
-            type="text"
+            type="tel"
             name="phone"
-            value={businessDetails.phone}
+            value={value.phone}
             onChange={handleChange}
           />
         </Field>
@@ -115,101 +57,50 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             className="input"
             type="email"
             name="email"
-            value={businessDetails.email}
+            value={value.email}
             onChange={handleChange}
           />
         </Field>
-        <Field label="ABN" htmlFor="business-abn" hint="11 digits" span={3} compact>
+        <Field
+          label="ABN"
+          htmlFor="business-abn"
+          hint="11 digits"
+          error={abnError}
+          span={3}
+          compact
+        >
           <input
             id="business-abn"
             className="input mono"
             type="text"
             name="abn"
-            value={businessDetails.abn}
+            inputMode="numeric"
+            value={value.abn}
             onChange={handleChange}
+            aria-invalid={abnError ? true : undefined}
+            aria-describedby={abnError && 'business-abn-error'}
           />
         </Field>
-        <Field label="ACN" htmlFor="business-acn" hint="optional" span={3} compact>
+        <Field label="ACN" htmlFor="business-acn" hint="optional" error={acnError} span={3} compact>
           <input
             id="business-acn"
             className="input mono"
             type="text"
             name="acn"
-            value={businessDetails.acn}
+            inputMode="numeric"
+            value={value.acn}
             onChange={handleChange}
+            aria-invalid={acnError ? true : undefined}
+            aria-describedby={acnError && 'business-acn-error'}
           />
         </Field>
-        <Field label="Address" htmlFor="business-address" span={9}>
-          <div className="address-wrap">
-            <AddressAutocomplete
-              id="business-address"
-              onPlaceSelected={handlePlaceSelected}
-              placeholder="Search an Australian address…"
-              className="input"
-            />
-          </div>
-        </Field>
-        <div className="field col-3 field--action">
-          <button
-            type="button"
-            onClick={toggleManualFields}
-            className="btn ghost sm"
-            aria-expanded={showManualFields}
-            aria-label={showManualFields ? 'Hide manual entry' : 'Enter address manually'}
-          >
-            {showManualFields ? 'Hide manual' : 'Manual address'} {I.chev}
-          </button>
-        </div>
-        {showManualFields && (
-          <>
-            <Field label="Street" htmlFor="business-street" span={8}>
-              <input
-                id="business-street"
-                className="input"
-                type="text"
-                name="street"
-                value={businessDetails.street}
-                onChange={handleChange}
-              />
-            </Field>
-            <Field label="Suburb" htmlFor="business-suburb" span={5}>
-              <input
-                id="business-suburb"
-                className="input"
-                type="text"
-                name="suburb"
-                value={businessDetails.suburb}
-                onChange={handleChange}
-              />
-            </Field>
-            <Field label="State" htmlFor="business-state" span={3}>
-              <select
-                id="business-state"
-                className="select"
-                name="state"
-                value={businessDetails.state}
-                onChange={handleChange}
-              >
-                <option value=""></option>
-                {AUSTRALIAN_STATES.map((s) => (
-                  <option key={s} value={s}>
-                    {s}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Postcode" htmlFor="business-postcode" span={4}>
-              <input
-                id="business-postcode"
-                className="input mono"
-                type="text"
-                name="postcode"
-                value={businessDetails.postcode}
-                onChange={handleChange}
-              />
-            </Field>
-          </>
-        )}
+        <AddressFields
+          idPrefix="business"
+          value={value}
+          placeholder="Search an Australian address…"
+          onChange={handleChange}
+          onAddressSelected={onChange}
+        />
       </div>
       <div className="divider" />
       <div className="field-grid">
@@ -219,7 +110,7 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             className="input"
             type="text"
             name="accountName"
-            value={businessDetails.accountName}
+            value={value.accountName}
             onChange={handleChange}
           />
         </Field>
@@ -229,7 +120,8 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             className="input mono"
             type="text"
             name="bsb"
-            value={businessDetails.bsb}
+            inputMode="numeric"
+            value={value.bsb}
             onChange={handleChange}
           />
         </Field>
@@ -239,7 +131,8 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             className="input mono"
             type="text"
             name="accountNumber"
-            value={businessDetails.accountNumber}
+            inputMode="numeric"
+            value={value.accountNumber}
             onChange={handleChange}
           />
         </Field>

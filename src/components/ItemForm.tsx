@@ -1,21 +1,27 @@
-import { useState, useEffect, useCallback, useMemo, memo, type ChangeEvent } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  memo,
+  type KeyboardEvent,
+  type PointerEvent,
+} from 'react';
 import Section from './ui/Section';
 import Segmented from './ui/Segmented';
+import NumberInput from './ui/NumberInput';
 import { I } from '../utils/icons';
+import { calculateTotals, formatMoney, lineTotal } from '../utils/money';
+import { blankItem } from '../utils/urlState';
 import type { InvoiceItem } from '../types';
-
-const MAX_URL_ITEMS = 10;
-let itemIdCounter = 0;
 
 interface ItemFormProps {
   items: InvoiceItem[];
+  currency: string;
   onChange: (items: InvoiceItem[]) => void;
 }
-
-const generateItemId = (): string => {
-  itemIdCounter += 1;
-  return `item-${Date.now()}-${itemIdCounter}`;
-};
 
 const GST_OPTIONS = [
   { value: 'no' as const, label: 'No' },
@@ -23,131 +29,114 @@ const GST_OPTIONS = [
   { value: 'inclusive' as const, label: 'Incl.' },
 ];
 
-const formatCurrency = (amount: number): string => {
-  const num = Number(amount) || 0;
-  const sign = num < 0 ? '-' : '';
-  const abs = Math.abs(num);
-  const str = abs.toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
-  return `${sign}$${str}`;
+const moveItem = (items: InvoiceItem[], from: number, to: number): InvoiceItem[] => {
+  const next = [...items];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  return next;
 };
 
-const ItemForm = memo(function ItemForm({ items, onChange }: ItemFormProps) {
-  const [isFirstLoad, setIsFirstLoad] = useState(true);
+const ItemForm = memo(function ItemForm({ items, currency, onChange }: ItemFormProps) {
+  const rows = useRef(new Map<string, HTMLTableRowElement>());
+  const latest = useRef({ items, onChange });
+  const awaitingRender = useRef(false);
+  const stopDrag = useRef<(() => void) | null>(null);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [announcement, setAnnouncement] = useState('');
 
-  useEffect(() => {
-    if (isFirstLoad) {
-      const queryParams = new URLSearchParams(window.location.search);
-      const storedItems: InvoiceItem[] = [];
-      for (let i = 0; i < MAX_URL_ITEMS; i++) {
-        const itemName = queryParams.get(`itemName_${i}`);
-        if (!itemName) break;
-        storedItems.push({
-          id: generateItemId(),
-          name: itemName,
-          quantity: parseInt(queryParams.get(`itemQuantity_${i}`) || '1', 10) || 1,
-          price: parseFloat(queryParams.get(`itemPrice_${i}`) || '0') || 0,
-          gst: (queryParams.get(`itemGst_${i}`) as InvoiceItem['gst']) || 'add',
-        });
-      }
-      if (storedItems.length > 0) {
-        onChange(storedItems);
-      }
-      setIsFirstLoad(false);
-    }
-  }, [onChange, isFirstLoad]);
+  // A drag step waits for the previous one to reach the DOM so row positions are current.
+  useLayoutEffect(() => {
+    latest.current = { items, onChange };
+    awaitingRender.current = false;
+  }, [items, onChange]);
 
-  useEffect(() => {
-    if (!isFirstLoad && items.length === 0) {
-      onChange([{ id: generateItemId(), name: '', quantity: 1, price: 0, gst: 'add' }]);
-    }
-    updateURL(items);
-  }, [items, onChange, isFirstLoad]);
+  useEffect(() => () => stopDrag.current?.(), []);
 
-  const updateURL = (itemsList: InvoiceItem[]) => {
-    const url = new URL(window.location.href);
-    for (let i = 0; i < MAX_URL_ITEMS; i++) {
-      url.searchParams.delete(`itemName_${i}`);
-      url.searchParams.delete(`itemQuantity_${i}`);
-      url.searchParams.delete(`itemPrice_${i}`);
-      url.searchParams.delete(`itemGst_${i}`);
-    }
-    itemsList.forEach((item, index) => {
-      url.searchParams.set(`itemName_${index}`, item.name);
-      url.searchParams.set(`itemQuantity_${index}`, String(item.quantity));
-      url.searchParams.set(`itemPrice_${index}`, String(item.price));
-      url.searchParams.set(`itemGst_${index}`, item.gst);
-    });
-    window.history.replaceState({}, '', url);
-  };
-
-  const handleItemChange = useCallback(
-    (index: number, event: ChangeEvent<HTMLInputElement>) => {
-      const newItems = [...items];
-      const { name, value } = event.target;
-      if (name === 'quantity') {
-        newItems[index] = { ...newItems[index], quantity: parseInt(value, 10) || 0 };
-      } else if (name === 'price') {
-        newItems[index] = { ...newItems[index], price: parseFloat(value) || 0 };
-      } else if (name === 'name') {
-        newItems[index] = { ...newItems[index], name: value };
-      }
-      onChange(newItems);
-      updateURL(newItems);
-    },
-    [items, onChange]
-  );
-
-  const handleGstChange = useCallback(
-    (index: number, next: InvoiceItem['gst']) => {
-      const newItems = [...items];
-      newItems[index] = { ...newItems[index], gst: next };
-      onChange(newItems);
-      updateURL(newItems);
+  const updateItem = useCallback(
+    (index: number, patch: Partial<InvoiceItem>) => {
+      onChange(items.map((item, i) => (i === index ? { ...item, ...patch } : item)));
     },
     [items, onChange]
   );
 
   const handleAddItem = useCallback(() => {
-    const newItem: InvoiceItem = {
-      id: generateItemId(),
-      name: '',
-      quantity: 1,
-      price: 0,
-      gst: 'add',
-    };
-    const newItems = [...items, newItem];
-    onChange(newItems);
-    updateURL(newItems);
+    onChange([...items, blankItem()]);
   }, [items, onChange]);
 
   const handleRemoveItem = useCallback(
     (index: number) => {
-      const newItems = items.filter((_, i) => i !== index);
-      onChange(newItems);
-      updateURL(newItems);
+      onChange(items.filter((_, i) => i !== index));
     },
     [items, onChange]
   );
 
-  const calc = useMemo(() => {
-    let subtotal = 0;
-    let gstSum = 0;
-    items.forEach((it) => {
-      const base = it.gst === 'inclusive' ? it.price / 1.1 : it.price;
-      subtotal += base * it.quantity;
-      if (it.gst === 'add') gstSum += it.price * it.quantity * 0.1;
-      else if (it.gst === 'inclusive') gstSum += it.price * it.quantity * (1 - 1 / 1.1);
-    });
-    return { subtotal, gst: gstSum, grand: subtotal + gstSum };
-  }, [items]);
+  const move = useCallback(
+    (from: number, to: number) => {
+      if (to < 0 || to >= items.length || to === from) return false;
+      onChange(moveItem(items, from, to));
+      setAnnouncement(`Item moved to position ${to + 1} of ${items.length}`);
+      return true;
+    },
+    [items, onChange]
+  );
 
-  const itemCountMeta = `${items.length} ${items.length === 1 ? 'item' : 'items'}`;
+  const handleGripKeyDown = (index: number) => (e: KeyboardEvent<HTMLButtonElement>) => {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    e.preventDefault();
+    move(index, e.key === 'ArrowUp' ? index - 1 : index + 1);
+  };
+
+  // Follows the pointer on window: reordering moves the grip's own row in the DOM, which drops
+  // any pointer capture on it.
+  const handleGripPointerDown = (id: string) => (e: PointerEvent<HTMLButtonElement>) => {
+    if (e.button !== 0) return;
+    stopDrag.current?.();
+    setDragging(id);
+
+    // Swap with a neighbour once the pointer passes the middle of its row.
+    const onMove = (event: globalThis.PointerEvent) => {
+      if (awaitingRender.current) return;
+      const { items: current, onChange: emit } = latest.current;
+      const from = current.findIndex((item) => item.id === id);
+      if (from < 0) return;
+      const rectAt = (i: number) => {
+        const item = current[i];
+        return item && rows.current.get(item.id)?.getBoundingClientRect();
+      };
+      const above = rectAt(from - 1);
+      const below = rectAt(from + 1);
+      let to = from;
+      if (above && event.clientY < above.top + above.height / 2) to = from - 1;
+      else if (below && event.clientY > below.top + below.height / 2) to = from + 1;
+      if (to === from) return;
+      awaitingRender.current = true;
+      emit(moveItem(current, from, to));
+      setAnnouncement(`Item moved to position ${to + 1} of ${current.length}`);
+    };
+
+    const stop = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      stopDrag.current = null;
+      setDragging(null);
+    };
+
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    stopDrag.current = stop;
+  };
+
+  const totals = useMemo(() => calculateTotals(items), [items]);
+  const money = (amount: number) => formatMoney(amount, currency);
+  const canReorder = items.length > 1;
 
   return (
     <Section
       n={4}
       title="Line items"
-      meta={itemCountMeta}
+      meta={`${items.length} ${items.length === 1 ? 'item' : 'items'}`}
       action={
         <button
           type="button"
@@ -159,8 +148,8 @@ const ItemForm = memo(function ItemForm({ items, onChange }: ItemFormProps) {
         </button>
       }
     >
-      <form role="group" aria-label="Invoice line items">
-        <table className="items-table">
+      <div role="group" aria-label="Invoice line items">
+        <table className={`items-table${dragging ? ' is-dragging' : ''}`}>
           <thead>
             <tr>
               <th style={{ width: 28 }} aria-hidden="true"></th>
@@ -179,100 +168,106 @@ const ItemForm = memo(function ItemForm({ items, onChange }: ItemFormProps) {
             </tr>
           </thead>
           <tbody>
-            {items.map((item, index) => {
-              const lineTotal =
-                item.gst === 'inclusive'
-                  ? item.quantity * item.price
-                  : item.gst === 'add'
-                    ? item.quantity * item.price * 1.1
-                    : item.quantity * item.price;
-              return (
-                <tr
-                  key={item.id}
-                  className="items-row"
-                  role="group"
-                  aria-label={`Item ${index + 1}`}
-                >
-                  <td>
-                    <span className="grip" title="Drag to reorder" aria-hidden="true">
+            {items.map((item, index) => (
+              <tr
+                key={item.id}
+                ref={(el) => {
+                  if (el) rows.current.set(item.id, el);
+                  else rows.current.delete(item.id);
+                }}
+                className={`items-row${dragging === item.id ? ' is-dragging' : ''}`}
+                role="group"
+                aria-label={`Item ${index + 1}`}
+              >
+                <td>
+                  {canReorder && (
+                    <button
+                      type="button"
+                      className="grip"
+                      aria-label={`Reorder item ${index + 1}`}
+                      title="Drag, or use the arrow keys, to reorder"
+                      onKeyDown={handleGripKeyDown(index)}
+                      onPointerDown={handleGripPointerDown(item.id)}
+                    >
                       {I.grip}
-                    </span>
-                  </td>
-                  <td>
-                    <label htmlFor={`item-name-${index}`} className="visually-hidden">
-                      Item {index + 1} Description
-                    </label>
-                    <input
-                      id={`item-name-${index}`}
-                      className="input"
-                      type="text"
-                      name="name"
-                      placeholder="Description"
-                      value={item.name}
-                      onChange={(e) => handleItemChange(index, e)}
-                    />
-                  </td>
-                  <td>
-                    <label htmlFor={`item-qty-${index}`} className="visually-hidden">
-                      Item {index + 1} Quantity
-                    </label>
-                    <input
-                      id={`item-qty-${index}`}
-                      className="input mono"
-                      type="number"
-                      name="quantity"
-                      placeholder="Qty"
-                      value={item.quantity}
-                      onChange={(e) => handleItemChange(index, e)}
-                      min="0"
-                      style={{ textAlign: 'right' }}
-                    />
-                  </td>
-                  <td>
-                    <label htmlFor={`item-price-${index}`} className="visually-hidden">
-                      Item {index + 1} Price
-                    </label>
-                    <input
-                      id={`item-price-${index}`}
-                      className="input mono"
-                      type="number"
-                      name="price"
-                      placeholder="Price"
-                      value={item.price}
-                      onChange={(e) => handleItemChange(index, e)}
-                      min="0"
-                      step="0.01"
-                      style={{ textAlign: 'right' }}
-                    />
-                  </td>
-                  <td>
-                    <Segmented
-                      value={item.gst}
-                      options={GST_OPTIONS}
-                      onChange={(next) => handleGstChange(index, next)}
-                      ariaLabel={`Item ${index + 1} GST`}
-                      name="gst"
-                    />
-                  </td>
-                  <td className="line-total">{formatCurrency(lineTotal)}</td>
-                  <td>
-                    {items.length > 1 && (
-                      <button
-                        type="button"
-                        className="btn ghost sm row-remove danger-ghost"
-                        onClick={() => handleRemoveItem(index)}
-                        aria-label={`Remove item ${index + 1}`}
-                        title="Remove"
-                      >
-                        {I.x}
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
+                    </button>
+                  )}
+                </td>
+                <td>
+                  <label htmlFor={`item-name-${index}`} className="visually-hidden">
+                    Item {index + 1} Description
+                  </label>
+                  <input
+                    id={`item-name-${index}`}
+                    className="input"
+                    type="text"
+                    name="name"
+                    placeholder="Description"
+                    value={item.name}
+                    onChange={(e) => updateItem(index, { name: e.target.value })}
+                  />
+                </td>
+                <td>
+                  <label htmlFor={`item-qty-${index}`} className="visually-hidden">
+                    Item {index + 1} Quantity
+                  </label>
+                  <NumberInput
+                    id={`item-qty-${index}`}
+                    className="input mono"
+                    name="quantity"
+                    placeholder="Qty"
+                    value={item.quantity}
+                    onValueChange={(quantity) => updateItem(index, { quantity })}
+                    min="0"
+                    step="any"
+                    style={{ textAlign: 'right' }}
+                  />
+                </td>
+                <td>
+                  <label htmlFor={`item-price-${index}`} className="visually-hidden">
+                    Item {index + 1} Price
+                  </label>
+                  <NumberInput
+                    id={`item-price-${index}`}
+                    className="input mono"
+                    name="price"
+                    placeholder="Price"
+                    value={item.price}
+                    onValueChange={(price) => updateItem(index, { price })}
+                    step="0.01"
+                    style={{ textAlign: 'right' }}
+                  />
+                </td>
+                <td>
+                  <Segmented
+                    value={item.gst}
+                    options={GST_OPTIONS}
+                    onChange={(gst) => updateItem(index, { gst })}
+                    ariaLabel={`Item ${index + 1} GST`}
+                    name="gst"
+                  />
+                </td>
+                <td className="line-total">{money(lineTotal(item))}</td>
+                <td>
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      className="btn ghost sm row-remove danger-ghost"
+                      onClick={() => handleRemoveItem(index)}
+                      aria-label={`Remove item ${index + 1}`}
+                      title="Remove"
+                    >
+                      {I.x}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
+        <div className="visually-hidden" aria-live="polite">
+          {announcement}
+        </div>
         <div className="items-footer">
           <button type="button" className="btn sm" onClick={handleAddItem}>
             {I.plus} Add another item
@@ -280,19 +275,19 @@ const ItemForm = memo(function ItemForm({ items, onChange }: ItemFormProps) {
           <div className="totals" aria-label="Totals">
             <div className="totals-row">
               <span>Subtotal</span>
-              <span>{formatCurrency(calc.subtotal)}</span>
+              <span>{money(totals.subtotal)}</span>
             </div>
             <div className="totals-row">
               <span>GST (10%)</span>
-              <span>{formatCurrency(calc.gst)}</span>
+              <span>{money(totals.gst)}</span>
             </div>
             <div className="totals-row grand">
               <span>Total</span>
-              <span>{formatCurrency(calc.grand)}</span>
+              <span>{money(totals.total)}</span>
             </div>
           </div>
         </div>
-      </form>
+      </div>
     </Section>
   );
 });

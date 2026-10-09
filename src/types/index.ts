@@ -47,7 +47,4 @@ export interface AddressComponent {
 
 export interface PlaceResult {
   address_components?: AddressComponent[];
-  geometry?: {
-    location: google.maps.LatLng;
-  };
 }

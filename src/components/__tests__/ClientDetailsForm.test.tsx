@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import ClientDetailsForm from '../ClientDetailsForm';
+import type { ClientDetails } from '../../types';
 
-// Mock AddressAutocomplete component
+// Stands in for the Google widget: typing a trigger word "selects" a place.
 vi.mock('../AddressAutocomplete', () => ({
   default: ({
     onPlaceSelected,
@@ -21,348 +23,152 @@ vi.mock('../AddressAutocomplete', () => ({
         if (e.target.value === 'trigger-place') {
           onPlaceSelected({
             address_components: [
+              { long_name: '2', short_name: '2', types: ['subpremise'] },
               { long_name: '456', short_name: '456', types: ['street_number'] },
-              { long_name: 'Client St', short_name: 'Client St', types: ['route'] },
+              { long_name: 'Collins St', short_name: 'Collins St', types: ['route'] },
               { long_name: 'Melbourne', short_name: 'Melbourne', types: ['locality'] },
-              { long_name: 'VIC', short_name: 'VIC', types: ['administrative_area_level_1'] },
+              { long_name: 'Victoria', short_name: 'VIC', types: ['administrative_area_level_1'] },
               { long_name: '3000', short_name: '3000', types: ['postal_code'] },
             ],
           });
         } else if (e.target.value === 'trigger-invalid') {
           onPlaceSelected(null);
-        } else if (e.target.value === 'trigger-no-components') {
-          onPlaceSelected({});
-        } else if (e.target.value === 'trigger-partial') {
-          onPlaceSelected({
-            address_components: [
-              { long_name: '789', short_name: '789', types: ['street_number'] },
-              { long_name: 'Test Rd', short_name: 'Test Rd', types: ['route'] },
-            ],
-          });
         }
       }}
     />
   ),
 }));
 
+const emptyClient: ClientDetails = {
+  name: '',
+  street: '',
+  suburb: '',
+  state: '',
+  postcode: '',
+  abn: '',
+  acn: '',
+};
+
+function Harness({
+  initial = emptyClient,
+  onChange,
+}: {
+  initial?: ClientDetails;
+  onChange: (patch: Partial<ClientDetails>) => void;
+}) {
+  const [value, setValue] = useState(initial);
+  return (
+    <ClientDetailsForm
+      value={value}
+      onChange={(patch) => {
+        onChange(patch);
+        setValue((prev) => ({ ...prev, ...patch }));
+      }}
+    />
+  );
+}
+
 describe('ClientDetailsForm', () => {
-  const mockOnChange = vi.fn();
+  const onChange = vi.fn();
 
   beforeEach(() => {
-    mockOnChange.mockClear();
-    Object.defineProperty(window, 'location', {
-      value: { search: '', href: 'http://localhost/' },
-      writable: true,
-    });
-    window.history.replaceState = vi.fn();
+    onChange.mockClear();
   });
 
-  it('renders the form with all fields', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+  const type = (label: string, value: string) =>
+    fireEvent.change(screen.getByLabelText(label), { target: { value } });
+
+  it('renders the client fields', () => {
+    render(<Harness onChange={onChange} />);
 
     expect(screen.getByLabelText('Client name')).toBeInTheDocument();
     expect(screen.getByLabelText('ABN')).toBeInTheDocument();
     expect(screen.getByLabelText('ACN')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /enter address manually/i })).toBeInTheDocument();
+    expect(screen.getByTestId('address-autocomplete')).toHaveAttribute(
+      'placeholder',
+      'Search an address…'
+    );
   });
 
-  it('calls onChange when client name is entered', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+  it('sends only the field that changed and shows the name in the header', () => {
+    render(<Harness onChange={onChange} />);
+    expect(screen.getByText('Client details')).toBeInTheDocument();
 
-    const nameInput = screen.getByLabelText('Client name');
-    fireEvent.change(nameInput, { target: { value: 'Test Client', name: 'name' } });
+    type('Client name', 'Client Corp');
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.name).toBe('Test Client');
+    expect(onChange).toHaveBeenCalledWith({ name: 'Client Corp' });
+    expect(screen.getByLabelText('Client name')).toHaveValue('Client Corp');
+    expect(screen.getAllByText('Client Corp').length).toBeGreaterThan(0);
   });
 
-  it('formats ABN correctly', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+  it('formats and checks the ABN and ACN', () => {
+    render(<Harness onChange={onChange} />);
 
-    const abnInput = screen.getByLabelText('ABN') as HTMLInputElement;
-    fireEvent.change(abnInput, { target: { value: '98765432109', name: 'abn' } });
+    type('ABN', '12345678901');
+    type('ACN', '000000019');
 
-    expect(abnInput.value).toBe('98 765 432 109');
+    expect(screen.getByLabelText('ABN')).toHaveValue('12 345 678 901');
+    expect(screen.getByText('Not a valid ABN')).toBeInTheDocument();
+    expect(screen.getByLabelText('ACN')).toHaveValue('000 000 019');
+    expect(screen.queryByText('Not a valid ACN')).not.toBeInTheDocument();
   });
 
-  it('formats ACN correctly', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    const acnInput = screen.getByLabelText('ACN') as HTMLInputElement;
-    fireEvent.change(acnInput, { target: { value: '987654321', name: 'acn' } });
-
-    expect(acnInput.value).toBe('987 654 321');
-  });
-
-  it('restricts postcode to 4 digits', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const postcodeInput = screen.getByLabelText('Postcode') as HTMLInputElement;
-    fireEvent.change(postcodeInput, { target: { value: '300012', name: 'postcode' } });
-
-    expect(postcodeInput.value).toBe('3000');
-  });
-
-  it('shows manual entry fields when button is clicked', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    expect(screen.getByLabelText('Street')).toBeInTheDocument();
-    expect(screen.getByLabelText('Suburb')).toBeInTheDocument();
-    expect(screen.getByLabelText('State')).toBeInTheDocument();
-    expect(screen.getByLabelText('Postcode')).toBeInTheDocument();
-  });
-
-  it('hides manual entry fields when button is clicked again', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-    expect(screen.getByLabelText('Street')).toBeInTheDocument();
-
-    fireEvent.click(screen.getByRole('button', { name: /hide manual entry/i }));
-    expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
-  });
-
-  it('populates fields when place is selected from autocomplete', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-place' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('456 Client St');
-    expect(lastCall.suburb).toBe('Melbourne');
-    expect(lastCall.state).toBe('VIC');
-    expect(lastCall.postcode).toBe('3000');
-  });
-
-  it('does not reveal manual fields when place is selected from autocomplete', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-place' } });
-
-    expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
-    expect(screen.queryByLabelText('Postcode')).not.toBeInTheDocument();
-  });
-
-  it('handles invalid place selection gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-invalid' } });
-
-    expect(consoleSpy).toHaveBeenCalledWith('Place or address components not found:', null);
-    consoleSpy.mockRestore();
-  });
-
-  it('handles place without address_components gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-no-components' } });
-
-    expect(consoleSpy).toHaveBeenCalled();
-    consoleSpy.mockRestore();
-  });
-
-  it('has state dropdown with Australian states', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const stateSelect = screen.getByLabelText('State');
-    expect(stateSelect).toBeInTheDocument();
-
-    const options = stateSelect.querySelectorAll('option');
-    expect(options.length).toBe(9); // Empty + 8 states
-  });
-
-  it('allows changing state via dropdown', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const stateSelect = screen.getByLabelText('State');
-    fireEvent.change(stateSelect, { target: { value: 'QLD', name: 'state' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.state).toBe('QLD');
-  });
-
-  it('allows entering street manually', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const streetInput = screen.getByLabelText('Street');
-    fireEvent.change(streetInput, { target: { value: '789 Manual St', name: 'street' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('789 Manual St');
-  });
-
-  it('allows entering suburb manually', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
-
-    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
-
-    const suburbInput = screen.getByLabelText('Suburb');
-    fireEvent.change(suburbInput, { target: { value: 'Brisbane', name: 'suburb' } });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.suburb).toBe('Brisbane');
-  });
-
-  it('reads URL parameters on mount', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?clientName=URL+Client&clientStreet=URL+Street',
-        href: 'http://localhost/?clientName=URL+Client&clientStreet=URL+Street',
-      },
-      writable: true,
+  it('fills the address, unit number included, from a selected place', () => {
+    render(<Harness onChange={onChange} />);
+    fireEvent.change(screen.getByTestId('address-autocomplete'), {
+      target: { value: 'trigger-place' },
     });
 
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+    expect(onChange).toHaveBeenCalledWith({
+      street: '2/456 Collins St',
+      suburb: 'Melbourne',
+      state: 'VIC',
+      postcode: '3000',
+    });
 
-    expect(screen.getByLabelText('Client name')).toHaveValue('URL Client');
-    expect(screen.getByLabelText('Street')).toHaveValue('URL Street');
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
+    expect(screen.getByLabelText('Street')).toHaveValue('2/456 Collins St');
   });
 
-  it('updates URL when client details change', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+  it('ignores a place without an address', () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    render(<Harness onChange={onChange} />);
+    fireEvent.change(screen.getByTestId('address-autocomplete'), {
+      target: { value: 'trigger-invalid' },
+    });
 
-    const nameInput = screen.getByLabelText('Client name');
-    fireEvent.change(nameInput, { target: { value: 'URL Test', name: 'name' } });
-
-    expect(window.history.replaceState).toHaveBeenCalled();
+    expect(onChange).not.toHaveBeenCalled();
+    consoleError.mockRestore();
   });
 
-  it('handles partial address with missing components', () => {
-    render(<ClientDetailsForm onChange={mockOnChange} />);
+  it('edits the address by hand', () => {
+    render(<Harness onChange={onChange} />);
+    fireEvent.click(screen.getByRole('button', { name: /enter address manually/i }));
 
-    const autocomplete = screen.getByTestId('address-autocomplete');
-    fireEvent.change(autocomplete, { target: { value: 'trigger-partial' } });
+    type('Street', '1 Smith St');
+    fireEvent.change(screen.getByLabelText('State'), { target: { value: 'WA' } });
+    type('Postcode', '6000x');
 
-    expect(mockOnChange).toHaveBeenCalled();
-    const lastCall = mockOnChange.mock.calls[mockOnChange.mock.calls.length - 1][0];
-    expect(lastCall.street).toBe('789 Test Rd');
-    expect(lastCall.suburb).toBe('');
-    expect(lastCall.state).toBe('');
-    expect(lastCall.postcode).toBe('');
+    expect(onChange).toHaveBeenCalledWith({ street: '1 Smith St' });
+    expect(onChange).toHaveBeenCalledWith({ state: 'WA' });
+    expect(screen.getByLabelText('Postcode')).toHaveValue('6000');
   });
 
-  it('auto-reveals manual address fields when value prop already has an address', () => {
-    render(
-      <ClientDetailsForm
-        onChange={mockOnChange}
-        value={{
-          name: 'Acme Pty Ltd',
-          street: '1 George St',
-          suburb: 'Sydney',
-          state: 'NSW',
-          postcode: '2000',
-          abn: '',
-          acn: '',
-        }}
-      />
-    );
-
-    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('Acme Pty Ltd');
-    expect((screen.getByLabelText('Street') as HTMLInputElement).value).toBe('1 George St');
-    expect((screen.getByLabelText('Suburb') as HTMLInputElement).value).toBe('Sydney');
-    expect((screen.getByLabelText('State') as HTMLSelectElement).value).toBe('NSW');
-    expect((screen.getByLabelText('Postcode') as HTMLInputElement).value).toBe('2000');
+  it('opens the manual fields when it starts with an address', () => {
+    render(<Harness onChange={onChange} initial={{ ...emptyClient, suburb: 'Hobart' }} />);
+    expect(screen.getByLabelText('Suburb')).toHaveValue('Hobart');
   });
 
-  it('keeps manual fields hidden when value prop has no address yet', () => {
-    render(
-      <ClientDetailsForm
-        onChange={mockOnChange}
-        value={{
-          name: 'New Client',
-          street: '',
-          suburb: '',
-          state: '',
-          postcode: '',
-          abn: '',
-          acn: '',
-        }}
-      />
-    );
-
+  it('keeps the manual fields closed when it starts without one', () => {
+    render(<Harness onChange={onChange} initial={{ ...emptyClient, name: 'No Address' }} />);
     expect(screen.queryByLabelText('Street')).not.toBeInTheDocument();
   });
 
-  it('does not update the URL when a controlled value prop is provided', () => {
-    render(
-      <ClientDetailsForm
-        onChange={mockOnChange}
-        value={{
-          name: '',
-          street: '',
-          suburb: '',
-          state: '',
-          postcode: '',
-          abn: '',
-          acn: '',
-        }}
-      />
-    );
-
-    fireEvent.change(screen.getByLabelText('Client name'), {
-      target: { value: 'Controlled', name: 'name' },
-    });
-
-    expect(mockOnChange).toHaveBeenCalled();
-    expect(window.history.replaceState).not.toHaveBeenCalled();
-  });
-
-  it('updates from a changing value prop after mount', () => {
-    const { rerender } = render(
-      <ClientDetailsForm
-        onChange={mockOnChange}
-        value={{
-          name: 'First',
-          street: '',
-          suburb: '',
-          state: '',
-          postcode: '',
-          abn: '',
-          acn: '',
-        }}
-      />
-    );
-
-    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('First');
-
-    rerender(
-      <ClientDetailsForm
-        onChange={mockOnChange}
-        value={{
-          name: 'Second',
-          street: '',
-          suburb: '',
-          state: '',
-          postcode: '',
-          abn: '',
-          acn: '',
-        }}
-      />
-    );
-
-    expect((screen.getByLabelText('Client name') as HTMLInputElement).value).toBe('Second');
+  it('never touches the URL itself', () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState');
+    render(<Harness onChange={onChange} />);
+    type('Client name', 'Quiet');
+    expect(replaceState).not.toHaveBeenCalled();
+    replaceState.mockRestore();
   });
 });

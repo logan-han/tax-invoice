@@ -1,7 +1,9 @@
 import { useEffect, useRef, memo } from 'react';
 import type { PlaceResult } from '../types';
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyBN-y5TW0Yz1qMBj7i4GA6KD2ToAp4us4o';
+// Browser key, locked to the site by HTTP referrer. Forks can supply their own at build time.
+const GOOGLE_MAPS_API_KEY =
+  import.meta.env.VITE_GOOGLE_MAPS_API_KEY || 'AIzaSyBN-y5TW0Yz1qMBj7i4GA6KD2ToAp4us4o';
 const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-api';
 let googleMapsScriptPromise: Promise<void> | null = null;
 
@@ -87,7 +89,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
 
       const handlePlaceSelection = async (place: google.maps.places.Place) => {
         try {
-          await place.fetchFields({ fields: ['addressComponents', 'location'] });
+          await place.fetchFields({ fields: ['addressComponents'] });
 
           const addressComponents =
             place.addressComponents?.map((component) => ({
@@ -96,16 +98,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
               types: component.types || [],
             })) || [];
 
-          const legacyPlace: PlaceResult = {
-            address_components: addressComponents,
-            geometry: place.location
-              ? {
-                  location: place.location,
-                }
-              : undefined,
-          };
-
-          callbackRef.current(legacyPlace);
+          callbackRef.current({ address_components: addressComponents });
         } catch (error) {
           console.error('Error fetching place details:', error);
         }

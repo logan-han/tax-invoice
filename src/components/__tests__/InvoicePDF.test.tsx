@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import InvoicePDF from '../InvoicePDF';
 import type { BusinessDetails, ClientDetails, InvoiceItem } from '../../types';
 
@@ -117,7 +117,7 @@ describe('InvoicePDF', () => {
   });
 
   it('calculates and displays GST when items have GST', () => {
-    render(
+    const { container } = render(
       <InvoicePDF
         businessDetails={mockBusinessDetails}
         clientDetails={mockClientDetails}
@@ -128,7 +128,10 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('TOTAL GST(10%)')).toBeInTheDocument();
+    const totals = within(container.querySelector('.inv-totals') as HTMLElement);
+    expect(totals.getByText('GST (10%)').nextElementSibling).toHaveTextContent('$20.00');
+    expect(totals.getByText('Subtotal').nextElementSibling).toHaveTextContent('$250.00');
+    expect(totals.getByText('Total').nextElementSibling).toHaveTextContent('$270.00');
   });
 
   it('displays bank details when provided', () => {
@@ -206,7 +209,7 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.queryByText('Due Date:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Due')).not.toBeInTheDocument();
   });
 
   it('shows grand total without Subtotal / GST rows when no items have GST', () => {
@@ -226,8 +229,38 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.queryByText('TOTAL GST(10%)')).not.toBeInTheDocument();
+    expect(screen.queryByText('GST (10%)')).not.toBeInTheDocument();
     expect(screen.queryByText('Subtotal')).not.toBeInTheDocument();
+  });
+
+  it('is a plain invoice when no line carries GST, and a tax invoice otherwise', () => {
+    const noGst: InvoiceItem[] = [
+      { id: '1', name: 'Consulting', quantity: 1, price: 100, gst: 'no' },
+    ];
+    const { rerender } = render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={mockClientDetails}
+        items={noGst}
+        invoiceDate="2025-01-15"
+        invoiceNumber="1"
+        dueDate=""
+      />
+    );
+    expect(screen.getByText('Invoice')).toBeInTheDocument();
+    expect(screen.queryByText('Tax Invoice')).not.toBeInTheDocument();
+
+    rerender(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={mockClientDetails}
+        items={mockItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="1"
+        dueDate=""
+      />
+    );
+    expect(screen.getByText('Tax Invoice')).toBeInTheDocument();
   });
 
   it('calculates inclusive GST correctly', () => {
@@ -246,7 +279,42 @@ describe('InvoicePDF', () => {
       />
     );
 
-    expect(screen.getByText('TOTAL GST(10%)')).toBeInTheDocument();
+    // $110 including GST is $100 + $10 GST, shown ex-GST on the line.
+    expect(screen.getByText('GST (10%)').nextElementSibling).toHaveTextContent('$10.00');
+    expect(screen.getAllByText('$100.00').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('$110.00').length).toBeGreaterThan(0);
+  });
+
+  it('labels the due date and formats both dates', () => {
+    render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={mockClientDetails}
+        items={mockItems}
+        invoiceDate="2025-01-15"
+        invoiceNumber="20250115-0001"
+        dueDate="2025-02-14"
+      />
+    );
+
+    expect(screen.getByText('Issued').nextElementSibling).toHaveTextContent('15 Jan 2025');
+    expect(screen.getByText('Due').nextElementSibling).toHaveTextContent('14 Feb 2025');
+  });
+
+  it('formats amounts in the invoice currency', () => {
+    render(
+      <InvoicePDF
+        businessDetails={mockBusinessDetails}
+        clientDetails={mockClientDetails}
+        items={[{ id: '1', name: 'Licence', quantity: 1, price: 1000, gst: 'no' }]}
+        invoiceDate="2025-01-15"
+        invoiceNumber="1"
+        dueDate=""
+        currency="GBP"
+      />
+    );
+
+    expect(screen.getByText('Total GBP').nextElementSibling).toHaveTextContent('£1,000.00');
   });
 
   it('handles empty date gracefully', () => {
@@ -483,9 +551,36 @@ describe('InvoicePDF', () => {
     const fromName = container.querySelector('.footerDetails .inv-party-name');
     expect(fromName?.textContent).toBe('—');
 
-    const remit = container.querySelector('.inv-footer');
-    expect(remit?.textContent).toContain('—');
+    // With nothing to remit to, the whole block is an editor hint.
+    const remit = container.querySelector('.inv-footer > div');
+    expect(remit).toHaveAttribute('data-placeholder');
     expect(remit?.textContent).toContain('Add BSB');
+    expect(screen.getByText('Your business')).toHaveAttribute('data-placeholder');
+  });
+
+  it('marks editor hints so the PDF can leave them out', () => {
+    const { container } = render(
+      <InvoicePDF
+        businessDetails={{ ...mockBusinessDetails, name: '', bsb: '' }}
+        clientDetails={{ ...mockClientDetails, name: '' }}
+        items={[{ id: '1', name: '', quantity: 1, price: 10, gst: 'no' }]}
+        invoiceDate="2025-01-15"
+        invoiceNumber="1"
+        dueDate=""
+      />
+    );
+
+    const hints = Array.from(container.querySelectorAll('[data-placeholder]')).map(
+      (el) => el.textContent
+    );
+    expect(hints).toEqual([
+      'Your business',
+      'Client name',
+      'Item description',
+      'Add BSB & account',
+    ]);
+    // The account name is real content, so the remit block itself stays.
+    expect(screen.getByText('Test Account').closest('[data-placeholder]')).toBeNull();
   });
 
   it('omits the client street line when only suburb/state/postcode are present', () => {

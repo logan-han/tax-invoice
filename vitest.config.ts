@@ -1,5 +1,5 @@
 import { defineConfig, mergeConfig } from 'vitest/config';
-import viteConfig from './vite.config';
+import viteConfig from './vite.config.ts';
 
 export default mergeConfig(
   viteConfig,
@@ -8,6 +8,8 @@ export default mergeConfig(
       globals: true,
       environment: 'jsdom',
       setupFiles: './vitest.setup.ts',
+      // Australian users, so run on Australian time: UTC CI would hide off-by-one-day bugs.
+      env: { TZ: 'Australia/Melbourne' },
       include: ['src/**/*.{test,spec}.{ts,tsx}'],
       coverage: {
         provider: 'v8',

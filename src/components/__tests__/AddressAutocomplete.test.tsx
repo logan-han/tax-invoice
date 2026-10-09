@@ -233,7 +233,6 @@ describe('AddressAutocomplete', () => {
           { longText: 'New South Wales', shortText: 'NSW', types: ['administrative_area_level_1'] },
           { longText: '2000', shortText: '2000', types: ['postal_code'] },
         ],
-        location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
       const mockPlaceAutocompleteConstructor = vi.fn(function () {
@@ -258,7 +257,7 @@ describe('AddressAutocomplete', () => {
         await eventHandlers['gmp-placeselect']({ place: mockPlace });
       });
 
-      expect(mockFetchFields).toHaveBeenCalledWith({ fields: ['addressComponents', 'location'] });
+      expect(mockFetchFields).toHaveBeenCalledWith({ fields: ['addressComponents'] });
       expect(mockOnPlaceSelected).toHaveBeenCalledWith({
         address_components: [
           { long_name: '123', short_name: '123', types: ['street_number'] },
@@ -271,9 +270,6 @@ describe('AddressAutocomplete', () => {
           },
           { long_name: '2000', short_name: '2000', types: ['postal_code'] },
         ],
-        geometry: {
-          location: mockPlace.location,
-        },
       });
     });
 
@@ -308,7 +304,6 @@ describe('AddressAutocomplete', () => {
       const mockPlace = {
         fetchFields: mockFetchFields,
         addressComponents: [{ longText: '456', shortText: '456', types: ['street_number'] }],
-        location: null,
       };
       const mockPlacePrediction = {
         toPlace: vi.fn(function () {
@@ -404,7 +399,6 @@ describe('AddressAutocomplete', () => {
       const mockPlace = {
         fetchFields: mockFetchFields,
         addressComponents: [],
-        location: null,
       };
 
       const mockPlaceAutocompleteConstructor = vi.fn(function () {
@@ -439,7 +433,6 @@ describe('AddressAutocomplete', () => {
       const mockPlace = {
         fetchFields: mockFetchFields,
         addressComponents: undefined,
-        location: { lat: () => -33.8688, lng: () => 151.2093 },
       };
 
       const mockPlaceAutocompleteConstructor = vi.fn(function () {
@@ -463,12 +456,7 @@ describe('AddressAutocomplete', () => {
         await eventHandlers['gmp-placeselect']({ place: mockPlace });
       });
 
-      expect(mockOnPlaceSelected).toHaveBeenCalledWith({
-        address_components: [],
-        geometry: {
-          location: mockPlace.location,
-        },
-      });
+      expect(mockOnPlaceSelected).toHaveBeenCalledWith({ address_components: [] });
     });
 
     it('adds autocomplete style to document head', async () => {

@@ -1,388 +1,235 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import App from '../App';
+import { generateInvoicePdf } from '../utils/generatePdf';
 
-// Mock the PDF generator so tests don't touch html2canvas/jspdf.
 vi.mock('../utils/generatePdf', () => ({
   generateInvoicePdf: vi.fn(() => Promise.resolve()),
 }));
 
-// Mock all child components to isolate App testing
-vi.mock('../components/BusinessDetailsForm', () => ({
-  default: ({ onChange, value }: { onChange: (details: unknown) => void; value?: unknown }) => (
-    <div data-testid="business-form">
-      <button
-        onClick={() =>
-          onChange({
-            name: 'Test Business',
-            street: '',
-            suburb: '',
-            state: '',
-            postcode: '',
-            phone: '',
-            email: '',
-            abn: '',
-            acn: '',
-            accountName: '',
-            bsb: '',
-            accountNumber: '',
-          })
-        }
-      >
-        Update Business
-      </button>
-      <span data-testid="business-value">{value ? JSON.stringify(value) : 'empty'}</span>
-    </div>
-  ),
+// The real widget loads Google Maps; tests only need somewhere to type.
+vi.mock('../components/AddressAutocomplete', () => ({
+  default: ({ id }: { id: string }) => <input id={id} />,
 }));
 
-vi.mock('../components/ClientDetailsForm', () => ({
-  default: ({ onChange, value }: { onChange: (details: unknown) => void; value?: unknown }) => (
-    <div data-testid="client-form">
-      <button
-        onClick={() =>
-          onChange({
-            name: 'Test Client',
-            street: '',
-            suburb: '',
-            state: '',
-            postcode: '',
-            abn: '',
-            acn: '',
-          })
-        }
-      >
-        Update Client
-      </button>
-      <span data-testid="client-value">{value ? JSON.stringify(value) : 'empty'}</span>
-    </div>
-  ),
-}));
+const pdfMock = vi.mocked(generateInvoicePdf);
 
-vi.mock('../components/ItemForm', () => ({
-  default: ({ items, onChange }: { items: unknown[]; onChange: (items: unknown[]) => void }) => (
-    <div data-testid="item-form">
-      <button onClick={() => onChange([...items, { id: 'new', name: 'New Item' }])}>
-        Add Item
-      </button>
-      <span data-testid="items-count">{items.length}</span>
-    </div>
-  ),
-}));
-
-vi.mock('../components/InvoiceDetailsForm', () => ({
-  default: ({ onChange }: { onChange: (details: unknown) => void }) => (
-    <div data-testid="invoice-form">
-      <button
-        onClick={() =>
-          onChange({
-            invoiceDate: '2025-01-15',
-            invoiceNumber: '20250115-0001',
-            dueDate: '2025-02-14',
-            currency: 'AUD',
-          })
-        }
-      >
-        Update Invoice
-      </button>
-    </div>
-  ),
-}));
-
-vi.mock('../components/InvoicePDF', () => ({
-  default: () => <div data-testid="invoice-pdf">Invoice PDF</div>,
-}));
+const openAt = (search: string) => window.history.replaceState(null, '', `/${search}`);
+const preview = () => within(document.getElementById('invoice') as HTMLElement);
+const params = () => new URLSearchParams(window.location.search);
 
 describe('App', () => {
   beforeEach(() => {
-    Object.defineProperty(window, 'location', {
-      value: { search: '', href: 'http://localhost/' },
-      writable: true,
-    });
-    window.history.replaceState = vi.fn();
+    openAt('');
+    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1200 });
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
+    pdfMock.mockReset();
+    pdfMock.mockResolvedValue(undefined);
   });
 
-  it('renders the main heading', () => {
+  it('renders the heading and every section', () => {
     render(<App />);
 
-    expect(screen.getByText('Australian Tax Invoice Generator')).toBeInTheDocument();
-    expect(screen.getByText(/Create professional tax invoices in minutes/)).toBeInTheDocument();
-  });
-
-  it('renders all form components', () => {
-    render(<App />);
-
-    expect(screen.getByTestId('business-form')).toBeInTheDocument();
-    expect(screen.getByTestId('client-form')).toBeInTheDocument();
-    expect(screen.getByTestId('item-form')).toBeInTheDocument();
-    expect(screen.getByTestId('invoice-form')).toBeInTheDocument();
-    expect(screen.getByTestId('invoice-pdf')).toBeInTheDocument();
-  });
-
-  it('renders immediately without a Google Maps loading gate', () => {
-    render(<App />);
-
-    expect(screen.getByText('Australian Tax Invoice Generator')).toBeInTheDocument();
-    expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
-  });
-
-  it('renders the Generate PDF button', () => {
-    render(<App />);
+    expect(
+      screen.getByRole('heading', { name: 'Australian Tax Invoice Generator' })
+    ).toBeInTheDocument();
+    for (const name of ['Your business', 'Bill to', 'Invoice', 'Line items']) {
+      expect(screen.getByRole('heading', { name })).toBeInTheDocument();
+    }
     expect(screen.getByRole('button', { name: /generate pdf/i })).toBeInTheDocument();
   });
 
-  it('calls generateInvoicePdf when Generate PDF is clicked', async () => {
-    const { generateInvoicePdf } = await import('../utils/generatePdf');
+  it('loads the invoice from the link', () => {
+    const client = encodeURIComponent(JSON.stringify({ name: 'Client Corp', suburb: 'Sydney' }));
+    const items = encodeURIComponent(
+      JSON.stringify([{ name: 'Consulting', quantity: 7.5, price: 150, gst: 'add' }])
+    );
+    const invoice = encodeURIComponent(
+      JSON.stringify({ invoiceDate: '2026-10-01', invoiceNumber: 'INV-9', dueDate: '2026-10-15' })
+    );
+    openAt(
+      `?businessName=Acme&businessAbn=51+824+753+556&client=${client}&items=${items}&invoice=${invoice}`
+    );
+
     render(<App />);
 
-    fireEvent.click(screen.getByText('Update Invoice'));
+    expect(screen.getByLabelText('Business name')).toHaveValue('Acme');
+    expect(screen.getByLabelText('Client name')).toHaveValue('Client Corp');
+    expect(screen.getByLabelText('Item 1 Quantity')).toHaveValue(7.5);
+    expect(screen.getByLabelText('Invoice number')).toHaveValue('INV-9');
+    expect(preview().getByText('Client Corp')).toBeInTheDocument();
+    expect(preview().getByText('1 Oct 2026')).toBeInTheDocument();
+    // 7.5 x $150 + 10% GST
+    expect(preview().getByText('$1,237.50')).toBeInTheDocument();
+  });
+
+  it('updates the preview as you type and saves to the URL once you pause', async () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState');
+    render(<App />);
+
+    const name = screen.getByLabelText('Business name');
+    for (const text of ['A', 'Ac', 'Acm', 'Acme']) {
+      fireEvent.change(name, { target: { value: text } });
+    }
+    expect(preview().getAllByText('Acme').length).toBeGreaterThan(0);
+
+    await waitFor(() => expect(params().get('businessName')).toBe('Acme'));
+    expect(replaceState).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes a link that reopens the same invoice', async () => {
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Client name'), { target: { value: 'Round Trip' } });
+    fireEvent.change(screen.getByLabelText('Item 1 Description'), { target: { value: 'Widget' } });
+    await waitFor(() => expect(params().get('items')).toContain('Widget'));
+
+    expect(JSON.parse(params().get('client') ?? '{}')).toEqual({ name: 'Round Trip' });
+    expect(params().has('itemName_0')).toBe(false);
+  });
+
+  it('carries on if the browser refuses a URL update', async () => {
+    const replaceState = vi.spyOn(window.history, 'replaceState').mockImplementation(() => {
+      throw new DOMException(
+        'Attempt to use history.replaceState() more than 100 times',
+        'SecurityError'
+      );
+    });
+    render(<App />);
+
+    fireEvent.change(screen.getByLabelText('Business name'), { target: { value: 'Still here' } });
+    await waitFor(() => expect(replaceState).toHaveBeenCalled());
+
+    expect(screen.getByLabelText('Business name')).toHaveValue('Still here');
+  });
+
+  it('generates the PDF with the invoice number and business name', async () => {
+    openAt('?businessName=Acme');
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Invoice number'), { target: { value: 'INV-1' } });
+
     fireEvent.click(screen.getByRole('button', { name: /generate pdf/i }));
 
-    await waitFor(() => {
-      expect(generateInvoicePdf).toHaveBeenCalledWith('20250115-0001');
-    });
+    await waitFor(() => expect(pdfMock).toHaveBeenCalledWith('INV-1', 'Acme'));
   });
 
-  it('handles business details change', async () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByText('Update Business'));
-
-    await waitFor(() => {
-      expect(window.history.replaceState).toHaveBeenCalled();
-    });
-  });
-
-  it('handles client details change', async () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByText('Update Client'));
-
-    await waitFor(() => {
-      expect(window.history.replaceState).toHaveBeenCalled();
-    });
-  });
-
-  it('handles items change', async () => {
-    render(<App />);
-
-    expect(screen.getByTestId('items-count')).toHaveTextContent('0');
-
-    fireEvent.click(screen.getByText('Add Item'));
-
-    await waitFor(() => {
-      expect(screen.getByTestId('items-count')).toHaveTextContent('1');
-      expect(window.history.replaceState).toHaveBeenCalled();
-    });
-  });
-
-  it('handles invoice details change', async () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByText('Update Invoice'));
-
-    await waitFor(() => {
-      expect(window.history.replaceState).toHaveBeenCalled();
-    });
-  });
-
-  it('reads business details from URL params on mount', () => {
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?businessName=URL+Business&businessEmail=test@example.com',
-        href: 'http://localhost/?businessName=URL+Business&businessEmail=test@example.com',
-      },
-      writable: true,
-    });
-
-    render(<App />);
-
-    const businessValue = screen.getByTestId('business-value');
-    expect(businessValue.textContent).toContain('URL Business');
-    expect(businessValue.textContent).toContain('test@example.com');
-  });
-
-  it('parses JSON client details from URL params', () => {
-    const clientData = JSON.stringify({
-      name: 'URL Client',
-      street: '',
-      suburb: '',
-      state: '',
-      postcode: '',
-      abn: '',
-      acn: '',
-    });
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: `?client=${encodeURIComponent(clientData)}`,
-        href: `http://localhost/?client=${encodeURIComponent(clientData)}`,
-      },
-      writable: true,
-    });
-
-    render(<App />);
-
-    expect(screen.getByTestId('client-value').textContent).toContain('URL Client');
-  });
-
-  it('parses JSON items from URL params', () => {
-    const itemsData = JSON.stringify([
-      { id: 'item-1', name: 'URL Item', quantity: 1, price: 100, gst: 'no' },
-    ]);
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: `?items=${encodeURIComponent(itemsData)}`,
-        href: `http://localhost/?items=${encodeURIComponent(itemsData)}`,
-      },
-      writable: true,
-    });
-
-    render(<App />);
-
-    expect(screen.getByTestId('items-count')).toHaveTextContent('1');
-  });
-
-  it('handles invalid JSON in URL params gracefully', () => {
-    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-
-    Object.defineProperty(window, 'location', {
-      value: {
-        search: '?client=invalid-json&items=also-invalid',
-        href: 'http://localhost/?client=invalid-json&items=also-invalid',
-      },
-      writable: true,
-    });
-
-    render(<App />);
-
-    expect(consoleSpy).toHaveBeenCalledWith('Failed to parse URL parameter');
-    expect(screen.getByTestId('items-count')).toHaveTextContent('0');
-
-    consoleSpy.mockRestore();
-  });
-
-  it('updates URL with business data on change', async () => {
-    render(<App />);
-
-    fireEvent.click(screen.getByText('Update Business'));
-
-    await waitFor(() => {
-      const businessValue = screen.getByTestId('business-value');
-      expect(businessValue.textContent).toContain('Test Business');
-    });
-  });
-
-  it('copies the share link to the clipboard and flips the button label', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText },
-    });
-
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
-
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalledWith('http://localhost/');
-      expect(screen.getByRole('button', { name: /link copied/i })).toBeInTheDocument();
-    });
-
-    await waitFor(
-      () => {
-        expect(screen.getByRole('button', { name: /copy share link/i })).toBeInTheDocument();
-      },
-      { timeout: 2500 }
-    );
-  });
-
-  it('silently swallows clipboard errors', async () => {
-    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
-    Object.defineProperty(navigator, 'clipboard', {
-      configurable: true,
-      value: { writeText },
-    });
-
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
-
-    await waitFor(() => {
-      expect(writeText).toHaveBeenCalled();
-    });
-    expect(screen.queryByRole('button', { name: /link copied/i })).not.toBeInTheDocument();
-  });
-
-  it('switches the active zoom level when a zoom button is clicked', () => {
-    render(<App />);
-    const zoomGroup = screen.getByRole('group', { name: 'Zoom' });
-    const buttons = zoomGroup.querySelectorAll('button');
-    expect(buttons.length).toBeGreaterThan(0);
-
-    fireEvent.click(screen.getByRole('button', { name: '150%' }));
-    expect(screen.getByRole('button', { name: '150%' })).toHaveClass('on');
-  });
-
-  it('logs and recovers when PDF generation throws', async () => {
-    const { generateInvoicePdf } = await import('../utils/generatePdf');
-    (generateInvoicePdf as unknown as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('boom')
-    );
-    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
-    render(<App />);
-    fireEvent.click(screen.getByRole('button', { name: /generate pdf/i }));
-
-    await waitFor(() => {
-      expect(consoleSpy).toHaveBeenCalledWith('Error generating PDF:', expect.any(Error));
-    });
-
-    const button = screen.getByRole('button', { name: /generate pdf/i });
-    expect(button).not.toBeDisabled();
-    consoleSpy.mockRestore();
-  });
-
-  it('picks the smallest zoom on narrow viewports', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 500 });
-    render(<App />);
-    expect(screen.getByRole('button', { name: '55%' })).toHaveClass('on');
-  });
-
-  it('picks the largest default zoom on wide viewports', () => {
-    Object.defineProperty(window, 'innerWidth', { configurable: true, value: 1600 });
-    render(<App />);
-    expect(screen.getByRole('button', { name: '100%' })).toHaveClass('on');
-  });
-
-  it('disables the Generate PDF button while generation is in progress', async () => {
-    const { generateInvoicePdf } = await import('../utils/generatePdf');
-    let resolveFn: () => void = () => {};
-    (generateInvoicePdf as unknown as ReturnType<typeof vi.fn>).mockImplementationOnce(
-      () =>
-        new Promise<void>((resolve) => {
-          resolveFn = resolve;
-        })
-    );
-
+  it('disables the button while the PDF is being made', async () => {
+    let finish: () => void = () => {};
+    pdfMock.mockImplementationOnce(() => new Promise<void>((resolve) => (finish = resolve)));
     render(<App />);
     const button = screen.getByRole('button', { name: /generate pdf invoice/i });
-    fireEvent.click(button);
 
+    fireEvent.click(button);
     await waitFor(() => {
       expect(button).toBeDisabled();
       expect(button).toHaveAttribute('aria-busy', 'true');
       expect(button).toHaveTextContent(/generating/i);
     });
 
-    resolveFn();
+    finish();
+    await waitFor(() => expect(button).not.toBeDisabled());
+  });
 
-    await waitFor(() => {
-      expect(button).not.toBeDisabled();
-      expect(button).toHaveAttribute('aria-busy', 'false');
+  it('says so when the PDF fails, and clears the message on retry', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    pdfMock.mockRejectedValueOnce(new Error('boom'));
+    render(<App />);
+    const button = screen.getByRole('button', { name: /generate pdf/i });
+
+    fireEvent.click(button);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/couldn.t create the pdf/i);
+    expect(consoleError).toHaveBeenCalledWith('Error generating PDF:', expect.any(Error));
+    expect(button).not.toBeDisabled();
+
+    fireEvent.click(button);
+    await waitFor(() => expect(screen.queryByRole('alert')).not.toBeInTheDocument());
+  });
+
+  it('prints, naming a saved PDF after the invoice', () => {
+    const print = vi.spyOn(window, 'print').mockImplementation(() => {});
+    document.title = 'Australian Tax Invoice Generator';
+    render(<App />);
+    fireEvent.change(screen.getByLabelText('Invoice number'), { target: { value: 'INV-5' } });
+
+    fireEvent.click(screen.getByRole('button', { name: /print/i }));
+    expect(print).toHaveBeenCalled();
+
+    window.dispatchEvent(new Event('beforeprint'));
+    expect(document.title).toBe('invoice-INV-5');
+    window.dispatchEvent(new Event('afterprint'));
+    expect(document.title).toBe('Australian Tax Invoice Generator');
+  });
+
+  describe('Copy share link', () => {
+    const stubClipboard = (writeText: (text: string) => Promise<void>) =>
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
+
+    afterEach(() => {
+      Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+    });
+
+    it('copies the current invoice even before the URL catches up', async () => {
+      const writeText = vi.fn().mockResolvedValue(undefined);
+      stubClipboard(writeText);
+      render(<App />);
+
+      fireEvent.change(screen.getByLabelText('Business name'), { target: { value: 'Fresh' } });
+      fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
+
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: /link copied/i })).toBeInTheDocument()
+      );
+      const copied = new URL(writeText.mock.calls[0][0]);
+      expect(copied.searchParams.get('businessName')).toBe('Fresh');
+
+      await waitFor(
+        () => expect(screen.getByRole('button', { name: /copy share link/i })).toBeInTheDocument(),
+        { timeout: 2500 }
+      );
+    });
+
+    it('does not claim success when copying fails', async () => {
+      const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+      stubClipboard(writeText);
+      render(<App />);
+
+      fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
+      await waitFor(() => expect(writeText).toHaveBeenCalled());
+
+      expect(screen.queryByRole('button', { name: /link copied/i })).not.toBeInTheDocument();
+    });
+
+    it('does nothing without a clipboard API', async () => {
+      render(<App />);
+      fireEvent.click(screen.getByRole('button', { name: /copy share link/i }));
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(screen.queryByRole('button', { name: /link copied/i })).not.toBeInTheDocument();
+    });
+  });
+
+  describe('zoom', () => {
+    it('switches level and marks the pressed button', () => {
+      render(<App />);
+      const button = screen.getByRole('button', { name: '150%' });
+
+      fireEvent.click(button);
+
+      expect(button).toHaveClass('on');
+      expect(button).toHaveAttribute('aria-pressed', 'true');
+      expect(screen.getByRole('button', { name: '85%' })).toHaveAttribute('aria-pressed', 'false');
+    });
+
+    it.each([
+      [500, '55%'],
+      [1200, '85%'],
+      [1600, '100%'],
+    ])('starts at a size that fits a %ipx window', (width, level) => {
+      Object.defineProperty(window, 'innerWidth', { configurable: true, value: width });
+      render(<App />);
+      expect(screen.getByRole('button', { name: level })).toHaveAttribute('aria-pressed', 'true');
     });
   });
 });

@@ -145,6 +145,10 @@
   font-weight: 400;
 }
 
+.field-hint--error {
+  color: var(--danger);
+}
+
 .app .input,
 .app .select {
   width: 100%;
@@ -183,6 +187,10 @@
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-soft);
   background: var(--bg-elev);
+}
+
+.app .input[aria-invalid='true'] {
+  border-color: var(--danger);
 }
 
 .app .input::placeholder {
@@ -399,14 +407,42 @@
 }
 
 .items-row .grip {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
   color: var(--ink-3);
   cursor: grab;
+  touch-action: none;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
-.items-row:hover .grip {
+.items-row:hover .grip,
+.items-row .grip:focus-visible,
+.items-row.is-dragging .grip {
   opacity: 1;
+}
+
+.items-row .grip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.items-table.is-dragging {
+  user-select: none;
+}
+
+.items-table.is-dragging .grip {
+  cursor: grabbing;
+}
+
+.items-row.is-dragging td {
+  background: var(--accent-soft);
 }
 
 .items-row .row-remove {

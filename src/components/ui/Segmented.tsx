@@ -13,6 +13,7 @@ interface SegmentedProps<T extends string> {
   name?: string;
 }
 
+/** A radio group drawn as a segmented control (WAI-ARIA radio group keyboard pattern). */
 export default function Segmented<T extends string>({
   value,
   options,
@@ -45,7 +46,7 @@ export default function Segmented<T extends string>({
   };
 
   return (
-    <div className="seg" role="tablist" aria-label={ariaLabel}>
+    <div className="seg" role="radiogroup" aria-label={ariaLabel}>
       {options.map((opt, i) => {
         const selected = value === opt.value;
         return (
@@ -55,8 +56,8 @@ export default function Segmented<T extends string>({
               buttonsRef.current[i] = el;
             }}
             type="button"
-            role="tab"
-            aria-selected={selected}
+            role="radio"
+            aria-checked={selected}
             tabIndex={selected ? 0 : -1}
             className={selected ? 'on' : ''}
             data-value={opt.value}
