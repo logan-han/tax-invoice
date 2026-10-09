@@ -37,7 +37,6 @@ export async function generateInvoicePdf(invoiceNumber: string): Promise<void> {
     scale: 2.5,
     useCORS: true,
     logging: false,
-    letterRendering: true,
     allowTaint: true,
     backgroundColor: '#fefdf9',
     // html2canvas 1.4.1 cannot parse oklch(). The app UI uses oklch via

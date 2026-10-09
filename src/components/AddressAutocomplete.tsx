@@ -10,7 +10,7 @@ const ensureGoogleMapsScript = (): Promise<void> => {
   if (window.google?.maps?.places?.PlaceAutocompleteElement) return Promise.resolve();
   if (googleMapsScriptPromise) return googleMapsScriptPromise;
 
-  googleMapsScriptPromise = new Promise((resolve, reject) => {
+  const loader = new Promise<void>((resolve, reject) => {
     const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
       existing.addEventListener('load', () => resolve(), { once: true });
@@ -35,7 +35,8 @@ const ensureGoogleMapsScript = (): Promise<void> => {
     throw error;
   });
 
-  return googleMapsScriptPromise;
+  googleMapsScriptPromise = loader;
+  return loader;
 };
 
 interface AddressAutocompleteProps {
@@ -110,8 +111,9 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
         }
       };
 
+      // Older event name, kept for API versions that still fire it.
       placeAutocomplete.addEventListener('gmp-placeselect', async (event) => {
-        const place = event.place as google.maps.places.Place | undefined;
+        const place = (event as Event & { place?: google.maps.places.Place }).place;
         if (place) {
           await handlePlaceSelection(place);
         }

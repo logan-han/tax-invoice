@@ -1,6 +1,13 @@
 build
 node_modules
 
+# Yarn PnP leftovers (this repo uses npm)
+.pnp.*
+.yarn/
+
+# TypeScript incremental state
+*.tsbuildinfo
+
 # Environment variables
 .env
 .env.local

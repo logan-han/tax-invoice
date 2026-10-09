@@ -103,7 +103,7 @@ describe('generateInvoicePdf', () => {
   });
 
   it('preloads required web fonts before rasterising', async () => {
-    const fontLoad = vi.fn(() => Promise.resolve());
+    const fontLoad = vi.fn((_font: string) => Promise.resolve());
     const fontsReady = Promise.resolve();
     Object.defineProperty(document, 'fonts', {
       configurable: true,

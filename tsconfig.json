@@ -15,8 +15,8 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "types": ["vite/client", "@testing-library/jest-dom"]
+    "types": ["vite/client", "google.maps"]
   },
-  "include": ["src"],
+  "include": ["src", "vitest.setup.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
