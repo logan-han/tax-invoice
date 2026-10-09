@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Australian Tax Invoice Generator</title>
+    <meta name="description" content="Free Australian tax invoice generator. Add your ABN, client and line items with GST, preview the invoice live and download it as a PDF. Nothing is stored: the link is your save file." />
+    <meta name="theme-color" content="#111827" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Australian Tax Invoice Generator" />
+    <meta property="og:description" content="Make an Australian tax invoice with GST in minutes and download it as a PDF. Free, no sign-up, nothing stored." />
+    <meta property="og:url" content="https://invoice.han.life/" />
     <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="shortcut icon" href="/favicon.ico" />
@@ -18,7 +24,13 @@
             window.dataLayer = window.dataLayer || [];
             window.gtag = function () { window.dataLayer.push(arguments); };
             gtag('js', new Date());
-            gtag('config', 'G-CVEBFCXFSW');
+            // The query string is the whole invoice, bank details included; send only utm_* params.
+            var pageUrl = new URL(location.href);
+            pageUrl.hash = '';
+            Array.from(pageUrl.searchParams.keys()).forEach(function (key) {
+                if (key.indexOf('utm_') !== 0) pageUrl.searchParams.delete(key);
+            });
+            gtag('config', 'G-CVEBFCXFSW', { page_location: pageUrl.href });
             var ga = document.createElement('script');
             ga.async = true;
             ga.src = 'https://www.googletagmanager.com/gtag/js?id=G-CVEBFCXFSW';
@@ -27,6 +39,7 @@
     </script>
 </head>
 <body>
+    <noscript>This invoice generator needs JavaScript to run.</noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
 </body>
