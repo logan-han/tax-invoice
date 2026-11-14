@@ -7,7 +7,7 @@ interface FieldProps {
   /** Replaces the hint; give the input aria-describedby={`${htmlFor}-error`}. */
   error?: string;
   children: ReactNode;
-  span?: 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 12;
+  span?: 2 | 3 | 4 | 5 | 6 | 8 | 9 | 12;
   compact?: boolean;
 }
 

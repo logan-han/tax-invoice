@@ -96,9 +96,6 @@
 .field.col-8 {
   grid-column: span 8;
 }
-.field.col-7 {
-  grid-column: span 7;
-}
 .field.col-6 {
   grid-column: span 6;
 }
@@ -118,7 +115,6 @@
 @media (max-width: 720px) {
   .field.col-9,
   .field.col-8,
-  .field.col-7,
   .field.col-6,
   .field.col-5,
   .field.col-4,
@@ -274,16 +270,6 @@
   color: var(--ink);
 }
 
-.app .btn.primary {
-  background: var(--ink);
-  color: var(--bg);
-  border-color: var(--ink);
-}
-
-.app .btn.primary:hover {
-  background: oklch(0.32 0.01 260);
-}
-
 .app .btn.accent {
   background: var(--accent);
   color: white;
@@ -307,10 +293,6 @@
   height: 28px;
   padding: 0 10px;
   font-size: 11px;
-}
-
-.app .btn .chev {
-  opacity: 0.5;
 }
 
 .address-wrap {
@@ -566,7 +548,6 @@
   .field.field--compact.col-4,
   .field.field--compact.col-5,
   .field.field--compact.col-6,
-  .field.field--compact.col-7,
   .field.field--compact.col-8,
   .field.field--compact.col-9 {
     grid-column: span 6;
