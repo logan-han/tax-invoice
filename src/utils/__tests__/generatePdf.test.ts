@@ -108,6 +108,42 @@ describe('generateInvoicePdf', () => {
     expect(pdf.save).toHaveBeenCalledWith('invoice-long.pdf');
   });
 
+  it('stretches a near-A4 capture over exactly one page', async () => {
+    html2canvasMock.mockResolvedValue(buildCanvas());
+
+    await generateInvoicePdf('one');
+
+    expect(jsPDFInstances[0].addImage.mock.calls).toEqual([
+      ['data:image/jpeg;base64,fake', 'JPEG', 0, 0, 210, 297],
+    ]);
+  });
+
+  it('shifts each further page of a long capture up by one A4 height', async () => {
+    nextImgProps.value = { width: 1000, height: 4000 };
+    html2canvasMock.mockResolvedValue(buildCanvas(4000));
+
+    await generateInvoicePdf('long');
+
+    const pdf = jsPDFInstances[0];
+    const imgHeight = 4000 * (210 / 1000);
+    expect(pdf.addImage.mock.calls).toEqual([
+      ['data:image/jpeg;base64,fake', 'JPEG', 0, 0, 210, imgHeight],
+      ['data:image/jpeg;base64,fake', 'JPEG', 0, -297, 210, imgHeight],
+      ['data:image/jpeg;base64,fake', 'JPEG', 0, -594, 210, imgHeight],
+    ]);
+    const calls = [
+      ...pdf.addImage.mock.invocationCallOrder.map((order) => ({ order, call: 'addImage' })),
+      ...pdf.addPage.mock.invocationCallOrder.map((order) => ({ order, call: 'addPage' })),
+    ];
+    expect(calls.sort((a, b) => a.order - b.order).map(({ call }) => call)).toEqual([
+      'addImage',
+      'addPage',
+      'addImage',
+      'addPage',
+      'addImage',
+    ]);
+  });
+
   it('preloads required web fonts before rasterising', async () => {
     const fontLoad = vi.fn((_font: string) => Promise.resolve());
     const fontsReady = Promise.resolve();
