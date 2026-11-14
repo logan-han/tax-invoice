@@ -1,7 +1,10 @@
+import type { ComponentProps } from 'react';
 import { describe, it, expect } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import InvoicePDF from '../InvoicePDF';
 import type { BusinessDetails, ClientDetails, InvoiceItem } from '../../types';
+
+type PaperProps = ComponentProps<typeof InvoicePDF>;
 
 describe('InvoicePDF', () => {
   const mockBusinessDetails: BusinessDetails = {
@@ -34,49 +37,33 @@ describe('InvoicePDF', () => {
     { id: '2', name: 'Item 2', quantity: 1, price: 50, gst: 'no' },
   ];
 
+  const baseProps: PaperProps = {
+    businessDetails: mockBusinessDetails,
+    clientDetails: mockClientDetails,
+    items: mockItems,
+    invoiceDate: '2025-01-15',
+    invoiceNumber: '20250115-0001',
+    dueDate: '2025-02-14',
+  };
+
+  const renderPaper = (overrides: Partial<PaperProps> = {}) =>
+    render(<InvoicePDF {...baseProps} {...overrides} />);
+
   it('renders the paper with #invoice id for html2canvas capture', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-        currency="AUD"
-      />
-    );
+    const { container } = renderPaper({ currency: 'AUD' });
 
     expect(container.querySelector('#invoice')).not.toBeNull();
   });
 
   it('displays business details', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper();
 
     expect(screen.getAllByText('Test Business').length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ABN:\s*12 345 678 901/).length).toBeGreaterThan(0);
   });
 
   it('displays client details in Bill to block', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper();
 
     expect(screen.getByText('Bill to')).toBeInTheDocument();
     expect(screen.getByText('Test Client')).toBeInTheDocument();
@@ -84,16 +71,7 @@ describe('InvoicePDF', () => {
   });
 
   it('displays invoice number prefixed with #', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper();
 
     const badge = container.querySelector('.inv-badge-num');
     expect(badge?.textContent).toContain('#');
@@ -101,32 +79,14 @@ describe('InvoicePDF', () => {
   });
 
   it('displays item names', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper();
 
     expect(screen.getByText('Item 1')).toBeInTheDocument();
     expect(screen.getByText('Item 2')).toBeInTheDocument();
   });
 
   it('calculates and displays GST when items have GST', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper();
 
     const totals = within(container.querySelector('.inv-totals') as HTMLElement);
     expect(totals.getByText('GST (10%)').nextElementSibling).toHaveTextContent('$20.00');
@@ -135,16 +95,7 @@ describe('InvoicePDF', () => {
   });
 
   it('displays bank details when provided', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper();
 
     expect(screen.getByText('Bank Account Details')).toBeInTheDocument();
     expect(screen.getByText('Test Account')).toBeInTheDocument();
@@ -162,16 +113,7 @@ describe('InvoicePDF', () => {
       acn: '987 654 321',
     };
 
-    render(
-      <InvoicePDF
-        businessDetails={businessWithACN}
-        clientDetails={clientWithACN}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ businessDetails: businessWithACN, clientDetails: clientWithACN });
 
     expect(screen.getAllByText(/ACN:\s*123 456 789/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/ACN:\s*987 654 321/).length).toBeGreaterThan(0);
@@ -183,31 +125,13 @@ describe('InvoicePDF', () => {
       bsb: '',
     };
 
-    render(
-      <InvoicePDF
-        businessDetails={businessWithoutBSB}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ businessDetails: businessWithoutBSB });
 
     expect(screen.queryByText('Bank Account Details')).not.toBeInTheDocument();
   });
 
   it('does not show due date when not provided', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate=""
-      />
-    );
+    renderPaper({ dueDate: '' });
 
     expect(screen.queryByText('Due')).not.toBeInTheDocument();
   });
@@ -218,16 +142,7 @@ describe('InvoicePDF', () => {
       { id: '2', name: 'Item 2', quantity: 1, price: 50, gst: 'no' },
     ];
 
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={noGstItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ items: noGstItems });
 
     expect(screen.queryByText('GST (10%)')).not.toBeInTheDocument();
     expect(screen.queryByText('Subtotal')).not.toBeInTheDocument();
@@ -237,29 +152,11 @@ describe('InvoicePDF', () => {
     const noGst: InvoiceItem[] = [
       { id: '1', name: 'Consulting', quantity: 1, price: 100, gst: 'no' },
     ];
-    const { rerender } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={noGst}
-        invoiceDate="2025-01-15"
-        invoiceNumber="1"
-        dueDate=""
-      />
-    );
+    const { rerender } = renderPaper({ items: noGst, invoiceNumber: '1', dueDate: '' });
     expect(screen.getByText('Invoice')).toBeInTheDocument();
     expect(screen.queryByText('Tax Invoice')).not.toBeInTheDocument();
 
-    rerender(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="1"
-        dueDate=""
-      />
-    );
+    rerender(<InvoicePDF {...baseProps} invoiceNumber="1" dueDate="" />);
     expect(screen.getByText('Tax Invoice')).toBeInTheDocument();
   });
 
@@ -268,16 +165,7 @@ describe('InvoicePDF', () => {
       { id: '1', name: 'Item with inclusive GST', quantity: 1, price: 110, gst: 'inclusive' },
     ];
 
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={inclusiveGstItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ items: inclusiveGstItems });
 
     // $110 including GST is $100 + $10 GST, shown ex-GST on the line.
     expect(screen.getByText('GST (10%)').nextElementSibling).toHaveTextContent('$10.00');
@@ -286,79 +174,37 @@ describe('InvoicePDF', () => {
   });
 
   it('labels the due date and formats both dates', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper();
 
     expect(screen.getByText('Issued').nextElementSibling).toHaveTextContent('15 Jan 2025');
     expect(screen.getByText('Due').nextElementSibling).toHaveTextContent('14 Feb 2025');
   });
 
   it('formats amounts in the invoice currency', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={[{ id: '1', name: 'Licence', quantity: 1, price: 1000, gst: 'no' }]}
-        invoiceDate="2025-01-15"
-        invoiceNumber="1"
-        dueDate=""
-        currency="GBP"
-      />
-    );
+    renderPaper({
+      items: [{ id: '1', name: 'Licence', quantity: 1, price: 1000, gst: 'no' }],
+      invoiceNumber: '1',
+      dueDate: '',
+      currency: 'GBP',
+    });
 
     expect(screen.getByText('Total GBP').nextElementSibling).toHaveTextContent('£1,000.00');
   });
 
   it('handles empty date gracefully', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate=""
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ invoiceDate: '' });
 
     expect(container.querySelector('#invoice')).not.toBeNull();
   });
 
   it('displays currency in amount header when provided', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-        currency="USD"
-      />
-    );
+    renderPaper({ currency: 'USD' });
 
     expect(screen.getByText(/Amount\s+USD/)).toBeInTheDocument();
   });
 
   it('displays phone and email when provided', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper();
 
     expect(container.textContent).toContain('test@business.com');
     expect(container.textContent).toContain('0412345678');
@@ -371,16 +217,7 @@ describe('InvoicePDF', () => {
       email: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={businessWithoutContact}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ businessDetails: businessWithoutContact });
 
     expect(container.textContent).not.toContain('test@business.com');
     expect(container.textContent).not.toContain('0412345678');
@@ -392,32 +229,13 @@ describe('InvoicePDF', () => {
       accountNumber: '',
     };
 
-    render(
-      <InvoicePDF
-        businessDetails={businessWithoutAccountNumber}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ businessDetails: businessWithoutAccountNumber });
 
     expect(screen.queryByText('Bank Account Details')).not.toBeInTheDocument();
   });
 
   it('displays currency in totals when provided and GST exists', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-        currency="EUR"
-      />
-    );
+    renderPaper({ currency: 'EUR' });
 
     expect(screen.getByText(/Total\s+EUR/)).toBeInTheDocument();
   });
@@ -427,17 +245,7 @@ describe('InvoicePDF', () => {
       { id: '1', name: 'Item 1', quantity: 1, price: 100, gst: 'no' },
     ];
 
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={noGstItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-        currency="GBP"
-      />
-    );
+    renderPaper({ items: noGstItems, currency: 'GBP' });
 
     expect(screen.getByText(/Total\s+GBP/)).toBeInTheDocument();
   });
@@ -448,16 +256,7 @@ describe('InvoicePDF', () => {
       abn: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={businessWithoutABN}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ businessDetails: businessWithoutABN });
 
     // The only ABN rendered should be the client's, in the Bill to block
     const abnMatches = container.textContent?.match(/ABN:/g) || [];
@@ -470,32 +269,14 @@ describe('InvoicePDF', () => {
       abn: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={clientWithoutABN}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ clientDetails: clientWithoutABN });
 
     const clientBlock = container.querySelector('.clientDetails');
     expect(clientBlock?.textContent).not.toContain('ABN:');
   });
 
   it('renders empty items list with a placeholder row', () => {
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={[]}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ items: [] });
 
     expect(screen.getByText('No items yet.')).toBeInTheDocument();
     expect(screen.getByText('$0.00')).toBeInTheDocument();
@@ -506,16 +287,7 @@ describe('InvoicePDF', () => {
       { id: '1', name: 'Expensive Item', quantity: 1, price: 12345.67, gst: 'add' },
     ];
 
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={expensiveItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ items: expensiveItems });
 
     const formattedAmounts = screen.getAllByText('$12,345.67');
     expect(formattedAmounts.length).toBeGreaterThan(0);
@@ -537,16 +309,7 @@ describe('InvoicePDF', () => {
       accountNumber: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={minimalBusiness}
-        clientDetails={mockClientDetails}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ businessDetails: minimalBusiness });
 
     const fromName = container.querySelector('.footerDetails .inv-party-name');
     expect(fromName?.textContent).toBe('—');
@@ -559,16 +322,13 @@ describe('InvoicePDF', () => {
   });
 
   it('marks editor hints so the PDF can leave them out', () => {
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={{ ...mockBusinessDetails, name: '', bsb: '' }}
-        clientDetails={{ ...mockClientDetails, name: '' }}
-        items={[{ id: '1', name: '', quantity: 1, price: 10, gst: 'no' }]}
-        invoiceDate="2025-01-15"
-        invoiceNumber="1"
-        dueDate=""
-      />
-    );
+    const { container } = renderPaper({
+      businessDetails: { ...mockBusinessDetails, name: '', bsb: '' },
+      clientDetails: { ...mockClientDetails, name: '' },
+      items: [{ id: '1', name: '', quantity: 1, price: 10, gst: 'no' }],
+      invoiceNumber: '1',
+      dueDate: '',
+    });
 
     const hints = Array.from(container.querySelectorAll('[data-placeholder]')).map(
       (el) => el.textContent
@@ -589,16 +349,7 @@ describe('InvoicePDF', () => {
       street: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={clientNoStreet}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ clientDetails: clientNoStreet });
 
     const detail = container.querySelector('.clientDetails .inv-party-detail');
     expect(detail?.textContent).not.toContain('456 Client St');
@@ -608,16 +359,7 @@ describe('InvoicePDF', () => {
   it('renders a placeholder description for unnamed line items', () => {
     const namelessItems: InvoiceItem[] = [{ id: '1', name: '', quantity: 1, price: 10, gst: 'no' }];
 
-    render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={mockClientDetails}
-        items={namelessItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    renderPaper({ items: namelessItems });
 
     expect(screen.getByText('Item description')).toBeInTheDocument();
   });
@@ -633,16 +375,7 @@ describe('InvoicePDF', () => {
       acn: '',
     };
 
-    const { container } = render(
-      <InvoicePDF
-        businessDetails={mockBusinessDetails}
-        clientDetails={anonymousClient}
-        items={mockItems}
-        invoiceDate="2025-01-15"
-        invoiceNumber="20250115-0001"
-        dueDate="2025-02-14"
-      />
-    );
+    const { container } = renderPaper({ clientDetails: anonymousClient });
 
     const billTo = container.querySelector('.clientDetails .inv-party-name');
     expect(billTo?.textContent).toBe('Client name');
