@@ -7,18 +7,25 @@ const GOOGLE_MAPS_API_KEY =
 const GOOGLE_MAPS_SCRIPT_ID = 'google-maps-places-api';
 let googleMapsScriptPromise: Promise<void> | null = null;
 
+const listenForLoad = (
+  script: HTMLScriptElement,
+  resolve: () => void,
+  reject: (error: Error) => void
+): void => {
+  script.addEventListener('load', () => resolve(), { once: true });
+  script.addEventListener('error', () => reject(new Error('Google Maps failed to load')), {
+    once: true,
+  });
+};
+
 const ensureGoogleMapsScript = (): Promise<void> => {
-  if (typeof window === 'undefined') return Promise.resolve();
   if (window.google?.maps?.places?.PlaceAutocompleteElement) return Promise.resolve();
   if (googleMapsScriptPromise) return googleMapsScriptPromise;
 
   const loader = new Promise<void>((resolve, reject) => {
     const existing = document.getElementById(GOOGLE_MAPS_SCRIPT_ID) as HTMLScriptElement | null;
     if (existing) {
-      existing.addEventListener('load', () => resolve(), { once: true });
-      existing.addEventListener('error', () => reject(new Error('Google Maps failed to load')), {
-        once: true,
-      });
+      listenForLoad(existing, resolve, reject);
       return;
     }
 
@@ -27,10 +34,7 @@ const ensureGoogleMapsScript = (): Promise<void> => {
     script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&libraries=places&v=beta&loading=async`;
     script.async = true;
     script.defer = true;
-    script.addEventListener('load', () => resolve(), { once: true });
-    script.addEventListener('error', () => reject(new Error('Google Maps failed to load')), {
-      once: true,
-    });
+    listenForLoad(script, resolve, reject);
     document.head.appendChild(script);
   }).catch((error) => {
     googleMapsScriptPromise = null;
@@ -40,6 +44,82 @@ const ensureGoogleMapsScript = (): Promise<void> => {
   googleMapsScriptPromise = loader;
   return loader;
 };
+
+const AUTOCOMPLETE_CSS = `
+  gmp-place-autocomplete {
+    display: block !important;
+    width: 100% !important;
+    border: 1px solid #ced4da !important;
+    border-radius: 4px !important;
+    outline: none !important;
+    background: #f8f9fa !important;
+    background-color: #f8f9fa !important;
+    color-scheme: light only !important;
+    --gmp-mat-background: #f8f9fa !important;
+    --gmp-mat-color: #212529 !important;
+  }
+  gmp-place-autocomplete:focus-within {
+    border-color: #86b7fe !important;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
+  }
+  gmp-place-autocomplete * {
+    background: transparent !important;
+    background-color: transparent !important;
+    color-scheme: light only !important;
+  }
+  gmp-place-autocomplete::part(input),
+  gmp-place-autocomplete::part(text-input) {
+    display: block !important;
+    width: 100% !important;
+    padding: 0.375rem 0.75rem !important;
+    font-size: 1rem !important;
+    font-weight: 400 !important;
+    line-height: 1.5 !important;
+    color: #212529 !important;
+    background-color: transparent !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+  }
+  gmp-place-autocomplete::part(input):focus,
+  gmp-place-autocomplete::part(text-input):focus {
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+  gmp-place-autocomplete::part(container),
+  gmp-place-autocomplete::part(search-icon) {
+    background: transparent !important;
+    background-color: transparent !important;
+  }
+  gmp-internal-place-autocomplete-overlay,
+  .gmp-place-autocomplete-overlay,
+  [class*="gmp-place-autocomplete"] {
+    color-scheme: light only !important;
+    background-color: #ffffff !important;
+  }
+  gmp-internal-place-autocomplete-overlay *,
+  .gmp-place-autocomplete-overlay * {
+    color-scheme: light only !important;
+  }
+`;
+
+const injectAutocompleteStyles = (): void => {
+  if (document.querySelector('style[data-gmp-autocomplete]')) return;
+  const style = document.createElement('style');
+  style.textContent = AUTOCOMPLETE_CSS;
+  style.setAttribute('data-gmp-autocomplete', 'true');
+  document.head.appendChild(style);
+};
+
+const toPlaceResult = (place: google.maps.places.Place): PlaceResult => ({
+  address_components:
+    place.addressComponents?.map((component) => ({
+      long_name: component.longText || '',
+      short_name: component.shortText || '',
+      types: component.types || [],
+    })) || [],
+});
 
 interface AddressAutocompleteProps {
   onPlaceSelected: (place: PlaceResult) => void;
@@ -72,7 +152,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
     });
 
     const initAutocomplete = () => {
-      if (cancelled || typeof window === 'undefined') return;
+      if (cancelled) return;
       if (!window.google?.maps?.places?.PlaceAutocompleteElement) {
         retryTimer = setTimeout(initAutocomplete, 100);
         return;
@@ -90,15 +170,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
       const handlePlaceSelection = async (place: google.maps.places.Place) => {
         try {
           await place.fetchFields({ fields: ['addressComponents'] });
-
-          const addressComponents =
-            place.addressComponents?.map((component) => ({
-              long_name: component.longText || '',
-              short_name: component.shortText || '',
-              types: component.types || [],
-            })) || [];
-
-          callbackRef.current({ address_components: addressComponents });
+          callbackRef.current(toPlaceResult(place));
         } catch (error) {
           console.error('Error fetching place details:', error);
         }
@@ -127,69 +199,7 @@ const AddressAutocomplete = memo(function AddressAutocomplete({
       }
       autocompleteRef.current = placeAutocomplete;
 
-      const style = document.createElement('style');
-      style.textContent = `
-        gmp-place-autocomplete {
-          display: block !important;
-          width: 100% !important;
-          border: 1px solid #ced4da !important;
-          border-radius: 4px !important;
-          outline: none !important;
-          background: #f8f9fa !important;
-          background-color: #f8f9fa !important;
-          color-scheme: light only !important;
-          --gmp-mat-background: #f8f9fa !important;
-          --gmp-mat-color: #212529 !important;
-        }
-        gmp-place-autocomplete:focus-within {
-          border-color: #86b7fe !important;
-          box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25) !important;
-        }
-        gmp-place-autocomplete * {
-          background: transparent !important;
-          background-color: transparent !important;
-          color-scheme: light only !important;
-        }
-        gmp-place-autocomplete::part(input),
-        gmp-place-autocomplete::part(text-input) {
-          display: block !important;
-          width: 100% !important;
-          padding: 0.375rem 0.75rem !important;
-          font-size: 1rem !important;
-          font-weight: 400 !important;
-          line-height: 1.5 !important;
-          color: #212529 !important;
-          background-color: transparent !important;
-          background: transparent !important;
-          border: none !important;
-          outline: none !important;
-        }
-        gmp-place-autocomplete::part(input):focus,
-        gmp-place-autocomplete::part(text-input):focus {
-          outline: none !important;
-          border: none !important;
-          box-shadow: none !important;
-        }
-        gmp-place-autocomplete::part(container),
-        gmp-place-autocomplete::part(search-icon) {
-          background: transparent !important;
-          background-color: transparent !important;
-        }
-        gmp-internal-place-autocomplete-overlay,
-        .gmp-place-autocomplete-overlay,
-        [class*="gmp-place-autocomplete"] {
-          color-scheme: light only !important;
-          background-color: #ffffff !important;
-        }
-        gmp-internal-place-autocomplete-overlay *,
-        .gmp-place-autocomplete-overlay * {
-          color-scheme: light only !important;
-        }
-      `;
-      if (!document.querySelector('style[data-gmp-autocomplete]')) {
-        style.setAttribute('data-gmp-autocomplete', 'true');
-        document.head.appendChild(style);
-      }
+      injectAutocompleteStyles();
     };
 
     initAutocomplete();
