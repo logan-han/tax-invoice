@@ -1,7 +1,7 @@
 import { useCallback, memo, type ChangeEvent } from 'react';
 import { formatField } from '../utils/formatters';
-import { identifierError } from '../utils/validators';
 import AddressFields from './AddressFields';
+import IdentifierField from './IdentifierField';
 import Section from './ui/Section';
 import Field from './ui/Field';
 import type { BusinessDetails } from '../types';
@@ -24,8 +24,6 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
     [onChange]
   );
 
-  const abnError = identifierError('abn', value.abn);
-  const acnError = identifierError('acn', value.acn);
   const meta = value.abn ? `ABN ${value.abn}` : 'Your details';
 
   return (
@@ -61,39 +59,20 @@ const BusinessDetailsForm = memo(function BusinessDetailsForm({
             onChange={handleChange}
           />
         </Field>
-        <Field
-          label="ABN"
-          htmlFor="business-abn"
+        <IdentifierField
+          kind="abn"
+          idPrefix="business"
           hint="11 digits"
-          error={abnError}
-          span={3}
-          compact
-        >
-          <input
-            id="business-abn"
-            className="input mono"
-            type="text"
-            name="abn"
-            inputMode="numeric"
-            value={value.abn}
-            onChange={handleChange}
-            aria-invalid={abnError ? true : undefined}
-            aria-describedby={abnError && 'business-abn-error'}
-          />
-        </Field>
-        <Field label="ACN" htmlFor="business-acn" hint="optional" error={acnError} span={3} compact>
-          <input
-            id="business-acn"
-            className="input mono"
-            type="text"
-            name="acn"
-            inputMode="numeric"
-            value={value.acn}
-            onChange={handleChange}
-            aria-invalid={acnError ? true : undefined}
-            aria-describedby={acnError && 'business-acn-error'}
-          />
-        </Field>
+          value={value.abn}
+          onChange={handleChange}
+        />
+        <IdentifierField
+          kind="acn"
+          idPrefix="business"
+          hint="optional"
+          value={value.acn}
+          onChange={handleChange}
+        />
         <AddressFields
           idPrefix="business"
           value={value}

@@ -113,6 +113,15 @@ describe('ClientDetailsForm', () => {
     expect(screen.queryByText('Not a valid ACN')).not.toBeInTheDocument();
   });
 
+  it('flags an ABN that fails the ATO check', () => {
+    render(<Harness onChange={onChange} />);
+    type('ABN', '12345678901');
+
+    const abn = screen.getByLabelText('ABN');
+    expect(abn).toHaveAttribute('aria-invalid', 'true');
+    expect(abn).toHaveAccessibleDescription('Not a valid ABN');
+  });
+
   it('fills the address, unit number included, from a selected place', () => {
     render(<Harness onChange={onChange} />);
     fireEvent.change(screen.getByTestId('address-autocomplete'), {

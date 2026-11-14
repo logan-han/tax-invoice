@@ -1,7 +1,7 @@
 import { useCallback, memo, type ChangeEvent } from 'react';
 import { formatField } from '../utils/formatters';
-import { identifierError } from '../utils/validators';
 import AddressFields from './AddressFields';
+import IdentifierField from './IdentifierField';
 import Section from './ui/Section';
 import Field from './ui/Field';
 import type { ClientDetails } from '../types';
@@ -24,9 +24,6 @@ const ClientDetailsForm = memo(function ClientDetailsForm({
     [onChange]
   );
 
-  const abnError = identifierError('abn', value.abn);
-  const acnError = identifierError('acn', value.acn);
-
   return (
     <Section n={2} title="Bill to" meta={value.name || 'Client details'}>
       <div className="field-grid">
@@ -40,32 +37,14 @@ const ClientDetailsForm = memo(function ClientDetailsForm({
             onChange={handleChange}
           />
         </Field>
-        <Field label="ABN" htmlFor="client-abn" error={abnError} span={3} compact>
-          <input
-            id="client-abn"
-            className="input mono"
-            type="text"
-            name="abn"
-            inputMode="numeric"
-            value={value.abn}
-            onChange={handleChange}
-            aria-invalid={abnError ? true : undefined}
-            aria-describedby={abnError && 'client-abn-error'}
-          />
-        </Field>
-        <Field label="ACN" htmlFor="client-acn" hint="optional" error={acnError} span={3} compact>
-          <input
-            id="client-acn"
-            className="input mono"
-            type="text"
-            name="acn"
-            inputMode="numeric"
-            value={value.acn}
-            onChange={handleChange}
-            aria-invalid={acnError ? true : undefined}
-            aria-describedby={acnError && 'client-acn-error'}
-          />
-        </Field>
+        <IdentifierField kind="abn" idPrefix="client" value={value.abn} onChange={handleChange} />
+        <IdentifierField
+          kind="acn"
+          idPrefix="client"
+          hint="optional"
+          value={value.acn}
+          onChange={handleChange}
+        />
         <AddressFields
           idPrefix="client"
           value={value}
